@@ -20,16 +20,16 @@
     <div class="max-w-md mx-auto min-h-screen bg-gray-50 shadow-xl relative">
         
         <!-- Header -->
-        <div class="bg-green-800 text-white p-6 rounded-b-3xl shadow-lg z-10 relative">
+        <div class="bg-indigo-800 text-white p-6 rounded-b-3xl shadow-lg z-10 relative">
             <h1 class="text-2xl font-bold mb-1">Golf Results ⛳️</h1>
-            <p class="text-green-200 text-xs">旧ペリ / 青天井 / 隠しホール固定</p>
+            <p class="text-indigo-200 text-xs">旧ペリ / 青天井 / 隠しホール固定(v2)</p>
             
             <!-- Tabs -->
-            <div class="mt-6 flex bg-green-900/50 p-1 rounded-full">
-                <button onclick="switchTab('IN')" id="tab-in" class="flex-1 py-2 rounded-full text-sm font-bold transition-all bg-white text-green-900 shadow">
+            <div class="mt-6 flex bg-indigo-900/50 p-1 rounded-full">
+                <button onclick="switchTab('IN')" id="tab-in" class="flex-1 py-2 rounded-full text-sm font-bold transition-all bg-white text-indigo-900 shadow">
                     IN CUP
                 </button>
-                <button onclick="switchTab('OUT')" id="tab-out" class="flex-1 py-2 rounded-full text-sm font-bold transition-all text-green-100 hover:text-white">
+                <button onclick="switchTab('OUT')" id="tab-out" class="flex-1 py-2 rounded-full text-sm font-bold transition-all text-indigo-100 hover:text-white">
                     OUT CUP
                 </button>
             </div>
@@ -40,7 +40,7 @@
             
             <!-- Action Button -->
             <div id="action-area" class="sticky top-4 z-20">
-                <button id="reveal-btn" onclick="revealNext()" class="w-full bg-green-600 hover:bg-green-500 active:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg text-lg transition-all transform active:scale-95 flex items-center justify-center gap-2 border-b-4 border-green-800">
+                <button id="reveal-btn" onclick="revealNext()" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg text-lg transition-all transform active:scale-95 flex items-center justify-center gap-2 border-b-4 border-indigo-800">
                     <span id="btn-text">8位 を発表</span>
                 </button>
                 <div id="finished-msg" class="hidden w-full bg-gray-800 text-white font-bold py-4 rounded-xl text-center shadow-inner">
@@ -61,7 +61,7 @@
 
             <!-- Hidden Holes Info -->
             <div class="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                <p class="text-xs text-gray-400 font-bold mb-2 uppercase">隠しホール (固定)</p>
+                <p class="text-xs text-gray-400 font-bold mb-2 uppercase">隠しホール (固定・変更済)</p>
                 <div id="hidden-holes-display" class="flex gap-2">
                     <!-- Badges -->
                 </div>
@@ -87,10 +87,10 @@
         const HOLE_NAMES_OUT = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         // Fixed Hidden Holes (Indices 0-8)
-        // IN: 11(idx 1), 14(idx 4), 17(idx 7)
-        const HIDDEN_IN = [1, 4, 7]; 
-        // OUT: 2(idx 1), 5(idx 4), 8(idx 7) -> Just picking same relative positions for simplicity
-        const HIDDEN_OUT = [1, 4, 7];
+        // IN: 12(idx 2), 13(idx 3), 18(idx 8)
+        const HIDDEN_IN = [2, 3, 8]; 
+        // OUT: 1(idx 0), 6(idx 5), 7(idx 6)
+        const HIDDEN_OUT = [0, 5, 6];
 
         let currentTab = 'IN';
         let revealStepIn = 0;
@@ -129,15 +129,7 @@
             const listEl = document.getElementById('ranking-list');
             const data = getSortedData(currentTab);
             const step = currentTab === 'IN' ? revealStepIn : revealStepOut;
-            const revealLimitIndex = 8 - step; // Index below which is hidden
-            
-            // Example: Step 0. Limit 8. All rows with rank > 8 (none) revealed? No.
-            // Logic:
-            // We want to show Rank 8 first (bottom of list).
-            // Rank 1 is index 0. Rank 8 is index 7.
-            // Step 1: Show Rank 8. (Index 7).
-            // Step 2: Show Rank 7. (Index 6).
-            // So, items with index >= (8 - step) are revealed.
+            const revealLimitIndex = 8 - step; 
             
             const thresholdIndex = 8 - step; 
             
@@ -146,7 +138,6 @@
             data.forEach((player, idx) => {
                 const rank = idx + 1;
                 const isRevealed = idx >= thresholdIndex;
-                const isNext = idx === thresholdIndex - 1; // The one about to be revealed (optional effect)
 
                 if (isRevealed) {
                     const isWinner = rank === 1;
@@ -210,11 +201,11 @@
             const tIn = document.getElementById('tab-in');
             const tOut = document.getElementById('tab-out');
             if (currentTab === 'IN') {
-                tIn.className = "flex-1 py-2 rounded-full text-sm font-bold transition-all bg-white text-green-900 shadow";
-                tOut.className = "flex-1 py-2 rounded-full text-sm font-bold transition-all text-green-100 hover:text-white";
+                tIn.className = "flex-1 py-2 rounded-full text-sm font-bold transition-all bg-white text-indigo-900 shadow";
+                tOut.className = "flex-1 py-2 rounded-full text-sm font-bold transition-all text-indigo-100 hover:text-white";
             } else {
-                tOut.className = "flex-1 py-2 rounded-full text-sm font-bold transition-all bg-white text-green-900 shadow";
-                tIn.className = "flex-1 py-2 rounded-full text-sm font-bold transition-all text-green-100 hover:text-white";
+                tOut.className = "flex-1 py-2 rounded-full text-sm font-bold transition-all bg-white text-indigo-900 shadow";
+                tIn.className = "flex-1 py-2 rounded-full text-sm font-bold transition-all text-indigo-100 hover:text-white";
             }
 
             // Hidden holes display
