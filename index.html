@@ -56,4 +56,117 @@ const players = [
   { name: "中村 敏朗", OUT: [7,5,8,7,3,8,9,5,7], IN: [5,6,8,8,5,6,8,6,7] },
   { name: "町田 啓",   OUT: [4,4,6,7,4,5,4,6,8], IN: [6,7,5,4,3,4,6,3,6] },
   { name: "丸山 翔司", OUT: [5,3,4,8,3,4,5,8,6], IN: [8,7,5,6,4,4,7,3,6] },
-  { name: "岡田 康平", OUT: 
+  { name: "岡田 康平", OUT: [7,6,7,8,5,9,7,6,9], IN: [8,7,11,7,3,5,6,6,7] },
+  { name: "楠田 基弘", OUT: [8,5,9,6,5,8,6,8,11], IN: [5,9,6,6,6,5,7,3,6] }
+];
+
+let currentResults = [];
+let currentIndex = 0;
+let currentSide = "";
+
+// 旧ペリ（ハーフ）計算
+// 9ホール中3ホールを隠しホールとする
+// ハンデ = (隠しホール合計 * 3 - 36) * 0.8
+function calculateResults(side) {
+  // 隠しホールをランダムに3つ決定
+  let indices = [0,1,2,3,4,5,6,7,8];
+  // シャッフル
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  const hiddenIndices = indices.slice(0, 3).sort((a,b)=>a-b);
+  
+  // 隠しホール表示用
+  const hiddenDisplay = hiddenIndices.map(i => (i+1) + "H").join(", ");
+  document.getElementById("hidden-holes-display").innerText = `隠しホール(${side}): ${hiddenDisplay}`;
+
+  const results = players.map(p => {
+    const scores = p[side];
+    const gross = scores.reduce((a, b) => a + b, 0);
+    
+    // 隠しホールの合計
+    let hiddenSum = 0;
+    hiddenIndices.forEach(idx => {
+      hiddenSum += scores[idx];
+    });
+
+    // 旧ペリ計算: (隠し合計 * 3 - 36) * 0.8
+    // 青天井・上限なしなのでそのまま計算
+    let hdcp = (hiddenSum * 3 - 36) * 0.8;
+    
+    // 少数第1位などで丸めるのが一般的だが、JSの浮動小数点で見やすく整形
+    hdcp = Math.round(hdcp * 10) / 10; 
+
+    const net = gross - hdcp;
+
+    return {
+      name: p.name,
+      gross: gross,
+      hdcp: hdcp,
+      net: net
+    };
+  });
+
+  // 順位並び替え (ネットスコア昇順 -> ハンデ上位(少ない方が偉い?通常はハンデが少ない＝上手い人が同ネットなら負けが多いが、
+  // ここでは年功序列等ないので、ネット昇順 -> ハンデ昇順 -> グロス昇順でソートします)
+  // 一般的なコンペ: ネットが良い順 -> ハンデが小さい順 -> 年齢 or グロス
+  results.sort((a, b) => {
+    if (a.net !== b.net) return a.net - b.net;
+    if (a.hdcp !== b.hdcp) return a.hdcp - b.hdcp; // ハンデが少ない方が上位
+    return a.gross - b.gross;
+  });
+
+  return results;
+}
+
+function init(side) {
+  currentSide = side;
+  currentResults = calculateResults(side);
+  // 表示は下位（配列の最後）から
+  currentIndex = currentResults.length - 1;
+  
+  document.getElementById("result-area").classList.remove("hidden");
+  showRank();
+}
+
+function showRank() {
+  if (currentIndex < 0) return;
+
+  const data = currentResults[currentIndex];
+  const rank = currentIndex + 1;
+  
+  const rankEl = document.getElementById("rank-label");
+  const nameEl = document.getElementById("player-name");
+  const detailEl = document.getElementById("score-details");
+  const tapEl = document.getElementById("tap-msg");
+
+  if (rank === 1) {
+    rankEl.innerHTML = "🏆 優勝 🏆";
+    rankEl.classList.add("winner");
+    nameEl.classList.add("winner");
+    tapEl.innerText = "終了";
+  } else {
+    rankEl.innerText = `第 ${rank} 位`;
+    rankEl.classList.remove("winner");
+    nameEl.classList.remove("winner");
+    tapEl.innerText = "タップして次の順位へ";
+  }
+
+  nameEl.innerText = data.name;
+  detailEl.innerHTML = `Gross: ${data.gross} / Hdcp: ${data.hdcp.toFixed(1)}<br>Net: <strong>${data.net.toFixed(1)}</strong>`;
+}
+
+function nextRank() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    showRank();
+  } else {
+    // 優勝表示済み
+    // alert("終了です");
+  }
+}
+</script>
+
+</body>
+</html>
