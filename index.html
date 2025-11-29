@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ゴルフコンペ結果発表</title>
+<style>
+  body { font-family: "Helvetica Neue", Arial, sans-serif; background-color: #f4f4f4; color: #333; text-align: center; padding: 20px; }
+  h1 { font-size: 1.2rem; margin-bottom: 20px; color: #555; }
+  .controls { margin-bottom: 20px; }
+  button { background-color: #4CAF50; color: white; border: none; padding: 10px 20px; margin: 5px; border-radius: 5px; font-size: 1rem; cursor: pointer; }
+  button.secondary { background-color: #999; }
+  button:active { transform: translateY(2px); }
+  
+  .card { background: white; max-width: 400px; margin: 0 auto; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; user-select: none; }
+  .rank-label { font-size: 1.5rem; color: #888; margin-bottom: 10px; }
+  .player-name { font-size: 2rem; font-weight: bold; margin-bottom: 15px; }
+  .score-details { font-size: 1.2rem; color: #555; }
+  .hidden-holes { font-size: 0.8rem; color: #999; margin-top: 20px; }
+  .tap-instruction { margin-top: 20px; font-size: 0.9rem; color: #aaa; animation: blink 2s infinite; }
+  
+  @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+  .winner { color: #d32f2f; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<h1>ハーフコンペ結果発表</h1>
+
+<div class="controls">
+  <button onclick="init('OUT')">OUT コンペ開始</button>
+  <button onclick="init('IN')">IN コンペ開始</button>
+</div>
+
+<div id="result-area" class="card hidden" onclick="nextRank()">
+  <div id="rank-label" class="rank-label"></div>
+  <div id="player-name" class="player-name"></div>
+  <div id="score-details" class="score-details"></div>
+  <div id="tap-msg" class="tap-instruction">画面をタップして次を表示</div>
+</div>
+
+<div id="hidden-holes-display" class="hidden-holes"></div>
+
+<script>
+// データ定義
+const pars = {
+  OUT: [4, 3, 4, 5, 3, 4, 4, 4, 5], // Total 36
+  IN:  [5, 4, 4, 4, 3, 4, 4, 3, 5]  // Total 36
+};
+
+const players = [
+  { name: "齋藤 迅",   OUT: [7,6,8,9,6,6,9,9,6], IN: [9,8,6,6,6,6,7,4,7] },
+  { name: "酒井 勇樹", OUT: [5,7,6,7,3,6,5,6,8], IN: [8,6,5,5,3,5,8,5,7] },
+  { name: "高橋 勇希", OUT: [6,5,7,11,7,6,6,5,7], IN: [6,6,7,4,4,6,6,6,8] },
+  { name: "中村 敏朗", OUT: [7,5,8,7,3,8,9,5,7], IN: [5,6,8,8,5,6,8,6,7] },
+  { name: "町田 啓",   OUT: [4,4,6,7,4,5,4,6,8], IN: [6,7,5,4,3,4,6,3,6] },
+  { name: "丸山 翔司", OUT: [5,3,4,8,3,4,5,8,6], IN: [8,7,5,6,4,4,7,3,6] },
+  { name: "岡田 康平", OUT: 
