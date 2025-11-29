@@ -1,172 +1,319 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ゴルフコンペ結果発表</title>
-<style>
-  body { font-family: "Helvetica Neue", Arial, sans-serif; background-color: #f4f4f4; color: #333; text-align: center; padding: 20px; }
-  h1 { font-size: 1.2rem; margin-bottom: 20px; color: #555; }
-  .controls { margin-bottom: 20px; }
-  button { background-color: #4CAF50; color: white; border: none; padding: 10px 20px; margin: 5px; border-radius: 5px; font-size: 1rem; cursor: pointer; }
-  button.secondary { background-color: #999; }
-  button:active { transform: translateY(2px); }
-  
-  .card { background: white; max-width: 400px; margin: 0 auto; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; user-select: none; }
-  .rank-label { font-size: 1.5rem; color: #888; margin-bottom: 10px; }
-  .player-name { font-size: 2rem; font-weight: bold; margin-bottom: 15px; }
-  .score-details { font-size: 1.2rem; color: #555; }
-  .hidden-holes { font-size: 0.8rem; color: #999; margin-top: 20px; }
-  .tap-instruction { margin-top: 20px; font-size: 0.9rem; color: #aaa; animation: blink 2s infinite; }
-  
-  @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-  .winner { color: #d32f2f; }
-  .hidden { display: none; }
-</style>
-</head>
-<body>
+import React, { useState, useEffect, useMemo } from 'react';
+import { Trophy, Medal, Flag, RefreshCw, ChevronRight, Hash, Eye, EyeOff } from 'lucide-react';
 
-<h1>ハーフコンペ結果発表</h1>
-
-<div class="controls">
-  <button onclick="init('OUT')">OUT コンペ開始</button>
-  <button onclick="init('IN')">IN コンペ開始</button>
-</div>
-
-<div id="result-area" class="card hidden" onclick="nextRank()">
-  <div id="rank-label" class="rank-label"></div>
-  <div id="player-name" class="player-name"></div>
-  <div id="score-details" class="score-details"></div>
-  <div id="tap-msg" class="tap-instruction">画面をタップして次を表示</div>
-</div>
-
-<div id="hidden-holes-display" class="hidden-holes"></div>
-
-<script>
-// データ定義
-const pars = {
-  OUT: [4, 3, 4, 5, 3, 4, 4, 4, 5], // Total 36
-  IN:  [5, 4, 4, 4, 3, 4, 4, 3, 5]  // Total 36
-};
-
-const players = [
-  { name: "齋藤 迅",   OUT: [7,6,8,9,6,6,9,9,6], IN: [9,8,6,6,6,6,7,4,7] },
-  { name: "酒井 勇樹", OUT: [5,7,6,7,3,6,5,6,8], IN: [8,6,5,5,3,5,8,5,7] },
-  { name: "高橋 勇希", OUT: [6,5,7,11,7,6,6,5,7], IN: [6,6,7,4,4,6,6,6,8] },
-  { name: "中村 敏朗", OUT: [7,5,8,7,3,8,9,5,7], IN: [5,6,8,8,5,6,8,6,7] },
-  { name: "町田 啓",   OUT: [4,4,6,7,4,5,4,6,8], IN: [6,7,5,4,3,4,6,3,6] },
-  { name: "丸山 翔司", OUT: [5,3,4,8,3,4,5,8,6], IN: [8,7,5,6,4,4,7,3,6] },
-  { name: "岡田 康平", OUT: [7,6,7,8,5,9,7,6,9], IN: [8,7,11,7,3,5,6,6,7] },
-  { name: "楠田 基弘", OUT: [8,5,9,6,5,8,6,8,11], IN: [5,9,6,6,6,5,7,3,6] }
+// Player data with hole-by-hole scores
+const PLAYERS = [
+  {
+    name: "町田 啓",
+    inScores: [6, 7, 5, 4, 3, 4, 6, 3, 6],
+    outScores: [4, 4, 6, 7, 4, 5, 4, 6, 8],
+  },
+  {
+    name: "丸山 翔司",
+    inScores: [8, 7, 5, 6, 4, 4, 7, 3, 6],
+    outScores: [5, 3, 4, 8, 3, 4, 5, 8, 6],
+  },
+  {
+    name: "岡田 康平",
+    inScores: [8, 7, 11, 7, 3, 5, 6, 6, 7],
+    outScores: [7, 6, 7, 8, 5, 9, 7, 6, 9],
+  },
+  {
+    name: "楠田 基弘",
+    inScores: [5, 9, 6, 6, 6, 5, 7, 3, 6],
+    outScores: [8, 5, 9, 6, 5, 8, 6, 8, 11],
+  },
+  {
+    name: "齋藤 迅",
+    inScores: [9, 8, 6, 6, 6, 6, 7, 4, 7],
+    outScores: [7, 6, 8, 9, 6, 6, 9, 9, 6],
+  },
+  {
+    name: "酒井 勇樹",
+    inScores: [8, 6, 5, 5, 3, 5, 8, 5, 7],
+    outScores: [5, 7, 6, 7, 3, 6, 5, 6, 8],
+  },
+  {
+    name: "高橋 勇希",
+    inScores: [6, 6, 7, 4, 4, 6, 6, 6, 8],
+    outScores: [6, 5, 7, 11, 7, 6, 6, 5, 7],
+  },
+  {
+    name: "中村 敏朗",
+    inScores: [5, 6, 8, 8, 5, 6, 8, 6, 7],
+    outScores: [7, 5, 8, 7, 3, 8, 9, 5, 7],
+  },
 ];
 
-let currentResults = [];
-let currentIndex = 0;
-let currentSide = "";
+// Course PAR data
+const PARS = {
+  in: [5, 4, 4, 4, 3, 4, 4, 3, 5], // Total 36
+  out: [4, 3, 4, 5, 3, 4, 4, 4, 5], // Total 36
+};
 
-// 旧ペリ（ハーフ）計算
-// 9ホール中3ホールを隠しホールとする
-// ハンデ = (隠しホール合計 * 3 - 36) * 0.8
-function calculateResults(side) {
-  // 隠しホールをランダムに3つ決定
-  let indices = [0,1,2,3,4,5,6,7,8];
-  // シャッフル
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
-  }
-  const hiddenIndices = indices.slice(0, 3).sort((a,b)=>a-b);
-  
-  // 隠しホール表示用
-  const hiddenDisplay = hiddenIndices.map(i => (i+1) + "H").join(", ");
-  document.getElementById("hidden-holes-display").innerText = `隠しホール(${side}): ${hiddenDisplay}`;
+// Helper to calculate Shin-Peri handicap
+const calculateHandicap = (scores: number[], hiddenHoleIndices: number[]) => {
+  let hiddenSum = 0;
+  hiddenHoleIndices.forEach(index => {
+    hiddenSum += scores[index];
+  });
+  // Formula for 9 holes: (Sum of 6 hidden holes * 3 - 72) * 0.8
+  const handicap = ((hiddenSum * 3) - 72) * 0.8;
+  return parseFloat(handicap.toFixed(1)); // Return rounded to 1 decimal
+};
 
-  const results = players.map(p => {
-    const scores = p[side];
-    const gross = scores.reduce((a, b) => a + b, 0);
-    
-    // 隠しホールの合計
-    let hiddenSum = 0;
-    hiddenIndices.forEach(idx => {
-      hiddenSum += scores[idx];
+const App = () => {
+  const [activeTab, setActiveTab] = useState<'in' | 'out'>('in');
+  const [hiddenHoles, setHiddenHoles] = useState<{ in: number[], out: number[] }>({ in: [], out: [] });
+  const [revealedCount, setRevealedCount] = useState(0);
+  const [showHiddenHoles, setShowHiddenHoles] = useState(false);
+
+  // Initialize random hidden holes on mount
+  useEffect(() => {
+    shuffleHiddenHoles();
+  }, []);
+
+  const shuffleHiddenHoles = () => {
+    const generateHidden = () => {
+      // Pick 6 random holes out of 9 (indices 0-8)
+      const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+      const shuffled = indices.sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, 6).sort((a, b) => a - b);
+    };
+
+    setHiddenHoles({
+      in: generateHidden(),
+      out: generateHidden(),
+    });
+    setRevealedCount(0); // Reset reveal process when holes change
+  };
+
+  // Calculate rankings based on current hidden holes and active tab
+  const rankings = useMemo(() => {
+    if (hiddenHoles[activeTab].length === 0) return [];
+
+    const calculated = PLAYERS.map(player => {
+      const scores = activeTab === 'in' ? player.inScores : player.outScores;
+      const gross = scores.reduce((a, b) => a + b, 0);
+      const hcp = calculateHandicap(scores, hiddenHoles[activeTab]);
+      const net = gross - hcp;
+
+      return {
+        ...player,
+        gross,
+        hcp,
+        net,
+      };
     });
 
-    // 旧ペリ計算: (隠し合計 * 3 - 36) * 0.8
-    // 青天井・上限なしなのでそのまま計算
-    let hdcp = (hiddenSum * 3 - 36) * 0.8;
-    
-    // 少数第1位などで丸めるのが一般的だが、JSの浮動小数点で見やすく整形
-    hdcp = Math.round(hdcp * 10) / 10; 
+    // Sort: Net Score Ascending, then Handicap Ascending (lower handicap wins tie)
+    return calculated.sort((a, b) => {
+      if (Math.abs(a.net - b.net) > 0.01) return a.net - b.net;
+      return a.hcp - b.hcp;
+    });
+  }, [activeTab, hiddenHoles]);
 
-    const net = gross - hdcp;
+  // Handle revealing the next rank
+  // Since we display from bottom (8th) to top (1st), we need to handle the index carefully.
+  // Let's say we want to show the list building up from bottom.
+  // revealedCount = 1 -> Show 8th place
+  // revealedCount = 2 -> Show 8th and 7th
+  // ...
+  const handleReveal = () => {
+    if (revealedCount < 8) {
+      setRevealedCount(prev => prev + 1);
+    }
+  };
 
-    return {
-      name: p.name,
-      gross: gross,
-      hdcp: hdcp,
-      net: net
-    };
-  });
+  const handleResetReveal = () => {
+    setRevealedCount(0);
+  };
 
-  // 順位並び替え (ネットスコア昇順 -> ハンデ上位(少ない方が偉い?通常はハンデが少ない＝上手い人が同ネットなら負けが多いが、
-  // ここでは年功序列等ないので、ネット昇順 -> ハンデ昇順 -> グロス昇順でソートします)
-  // 一般的なコンペ: ネットが良い順 -> ハンデが小さい順 -> 年齢 or グロス
-  results.sort((a, b) => {
-    if (a.net !== b.net) return a.net - b.net;
-    if (a.hdcp !== b.hdcp) return a.hdcp - b.hdcp; // ハンデが少ない方が上位
-    return a.gross - b.gross;
-  });
+  const toggleTab = (tab: 'in' | 'out') => {
+    setActiveTab(tab);
+    setRevealedCount(0);
+  };
 
-  return results;
-}
-
-function init(side) {
-  currentSide = side;
-  currentResults = calculateResults(side);
-  // 表示は下位（配列の最後）から
-  currentIndex = currentResults.length - 1;
+  // Get the players to display based on revealedCount
+  // We want to display them in a list. Usually results lists show 1st at top.
+  // But we are revealing from 8th.
+  // So visually, we might want to fill the table from bottom up, or just append to a list.
+  // Let's stick to a standard Ranking Table where 1st is at the top, but rows are hidden/blurred until revealed.
+  // Or better: A "Presentation Mode" where we show the current rank being announced.
   
-  document.getElementById("result-area").classList.remove("hidden");
-  showRank();
-}
+  // Let's go with: A list sorted 1..8, but we only "unmask" from 8 down to 1.
+  // So:
+  // 1. ???
+  // ...
+  // 7. ???
+  // 8. Revealed Person
 
-function showRank() {
-  if (currentIndex < 0) return;
+  return (
+    <div className="min-h-screen bg-gray-100 p-4 font-sans text-gray-800 max-w-md mx-auto">
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        {/* Header */}
+        <div className="bg-slate-800 text-white p-4 text-center relative">
+          <h1 className="text-xl font-bold flex items-center justify-center gap-2">
+            <Flag className="w-5 h-5 text-green-400" />
+            ゴルフコンペ結果発表
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">新ペリア・青天井・隠しホールおまかせ</p>
+        </div>
 
-  const data = currentResults[currentIndex];
-  const rank = currentIndex + 1;
-  
-  const rankEl = document.getElementById("rank-label");
-  const nameEl = document.getElementById("player-name");
-  const detailEl = document.getElementById("score-details");
-  const tapEl = document.getElementById("tap-msg");
+        {/* Tab Switcher */}
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => toggleTab('in')}
+            className={`flex-1 py-3 font-bold transition-colors ${
+              activeTab === 'in' 
+                ? 'bg-green-100 text-green-700 border-b-2 border-green-600' 
+                : 'bg-white text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            IN コース (前半)
+          </button>
+          <button
+            onClick={() => toggleTab('out')}
+            className={`flex-1 py-3 font-bold transition-colors ${
+              activeTab === 'out' 
+                ? 'bg-green-100 text-green-700 border-b-2 border-green-600' 
+                : 'bg-white text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            OUT コース (後半)
+          </button>
+        </div>
 
-  if (rank === 1) {
-    rankEl.innerHTML = "🏆 優勝 🏆";
-    rankEl.classList.add("winner");
-    nameEl.classList.add("winner");
-    tapEl.innerText = "終了";
-  } else {
-    rankEl.innerText = `第 ${rank} 位`;
-    rankEl.classList.remove("winner");
-    nameEl.classList.remove("winner");
-    tapEl.innerText = "タップして次の順位へ";
-  }
+        {/* Controls */}
+        <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+          <div className="flex gap-2">
+             <button
+              onClick={handleResetReveal}
+              className="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-gray-600 transition"
+            >
+              リセット
+            </button>
+            <button
+              onClick={shuffleHiddenHoles}
+              className="text-xs flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded transition"
+            >
+              <RefreshCw className="w-3 h-3" />
+              隠しホール変更
+            </button>
+          </div>
+          <button
+            onClick={() => setShowHiddenHoles(!showHiddenHoles)}
+            className="text-xs flex items-center gap-1 text-gray-500 hover:text-gray-700"
+          >
+            {showHiddenHoles ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+            {showHiddenHoles ? '隠す' : '確認'}
+          </button>
+        </div>
+        
+        {/* Hidden Holes Display (Conditional) */}
+        {showHiddenHoles && (
+          <div className="bg-yellow-50 p-2 text-center text-xs text-yellow-800 border-b border-yellow-100">
+            隠しホール: {hiddenHoles[activeTab].map(h => h + (activeTab === 'in' ? 10 : 1)).join(', ')}
+          </div>
+        )}
 
-  nameEl.innerText = data.name;
-  detailEl.innerHTML = `Gross: ${data.gross} / Hdcp: ${data.hdcp.toFixed(1)}<br>Net: <strong>${data.net.toFixed(1)}</strong>`;
-}
+        {/* Main Ranking List */}
+        <div className="p-2 space-y-2 min-h-[400px]">
+          {rankings.map((player, index) => {
+            const rank = index + 1;
+            // logic: we reveal from 8 down to 1.
+            // if revealedCount is 0, show nothing.
+            // if revealedCount is 1, show rank 8 (index 7).
+            // if revealedCount is 8, show rank 1 (index 0).
+            
+            // So, is this row visible?
+            // Row index 7 (Rank 8) is visible if revealedCount >= 1
+            // Row index 6 (Rank 7) is visible if revealedCount >= 2
+            // Row index 0 (Rank 1) is visible if revealedCount >= 8
+            
+            // Formula: visible if index >= (8 - revealedCount)
+            const isVisible = index >= (8 - revealedCount);
+            const isJustRevealed = index === (8 - revealedCount);
+            
+            // Styling for podium
+            let rankBadge = <span className="text-gray-500 font-bold w-6 text-center">{rank}</span>;
+            let rowBg = "bg-white";
+            let borderClass = "border-gray-200";
 
-function nextRank() {
-  if (currentIndex > 0) {
-    currentIndex--;
-    showRank();
-  } else {
-    // 優勝表示済み
-    // alert("終了です");
-  }
-}
-</script>
+            if (rank === 1) {
+              rankBadge = <Trophy className="w-6 h-6 text-yellow-500" />;
+              rowBg = "bg-yellow-50";
+              borderClass = "border-yellow-200";
+            } else if (rank === 2) {
+              rankBadge = <Medal className="w-6 h-6 text-gray-400" />;
+              rowBg = "bg-slate-50";
+              borderClass = "border-slate-200";
+            } else if (rank === 3) {
+              rankBadge = <Medal className="w-6 h-6 text-amber-600" />;
+              rowBg = "bg-orange-50";
+              borderClass = "border-orange-200";
+            }
 
-</body>
-</html>
+            return (
+              <div 
+                key={player.name}
+                className={`flex items-center p-3 rounded-lg border shadow-sm transition-all duration-500 ${
+                  isVisible ? 'opacity-100 translate-x-0' : 'opacity-20 blur-sm grayscale'
+                } ${rowBg} ${borderClass} ${isJustRevealed ? 'scale-105 ring-2 ring-green-400' : ''}`}
+              >
+                <div className="flex-shrink-0 mr-3 flex items-center justify-center w-8">
+                  {isVisible ? rankBadge : <span className="text-gray-300">?</span>}
+                </div>
+                
+                <div className="flex-grow">
+                  <div className="font-bold text-gray-800">
+                    {isVisible ? player.name : "???"}
+                  </div>
+                  <div className="text-xs text-gray-500 flex gap-3 mt-1">
+                    <span>グロス: {isVisible ? player.gross : "-"}</span>
+                    <span>HDCP: {isVisible ? player.hcp.toFixed(1) : "-"}</span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-xs text-gray-400 mb-1">NET</div>
+                  <div className={`text-xl font-bold ${rank === 1 ? 'text-yellow-600' : 'text-gray-700'}`}>
+                    {isVisible ? player.net.toFixed(1) : "---"}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Action Button */}
+        <div className="p-4 bg-white border-t border-gray-100 sticky bottom-0">
+          <button
+            onClick={handleReveal}
+            disabled={revealedCount >= 8}
+            className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${
+              revealedCount >= 8
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-500 shadow-green-200'
+            }`}
+          >
+            {revealedCount >= 8 ? (
+              "発表終了"
+            ) : (
+              <>
+                {revealedCount === 0 ? "順位発表スタート" : "次の順位を表示"}
+                <ChevronRight className="w-5 h-5" />
+              </>
+            )}
+          </button>
+          <div className="text-center mt-2 text-xs text-gray-400">
+            {revealedCount === 0 ? "クリックして8位から順に表示します" : `現在 ${revealedCount} / 8 人発表済み`}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default App;
+
