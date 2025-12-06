@@ -1,1 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>集計中...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #4ade80; /* bg-green-400 */
+            overflow: hidden;
+        }
+        
+        /* 芝生のテクスチャ風 */
+        .turf {
+            background-image: 
+                linear-gradient(45deg, #22c55e 25%, transparent 25%, transparent 75%, #22c55e 75%, #22c55e), 
+                linear-gradient(45deg, #22c55e 25%, transparent 25%, transparent 75%, #22c55e 75%, #22c55e);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            opacity: 0.3;
+        }
+
+        .track-lane {
+            border-bottom: 2px dashed rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        .horse-container {
+            position: absolute;
+            bottom: 5px;
+            /* 初期位置は画面外左 */
+            left: -100px; 
+            will-change: left, transform;
+        }
+
+        /* 走る動き（画面左から右へ） */
+        @keyframes runAcross {
+            0% { left: -10%; }
+            100% { left: 110%; }
+        }
+
+        /* パカラッパカラッという上下の動き */
+        @keyframes gallop {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-5px) rotate(-5deg); }
+            50% { transform: translateY(0) rotate(0deg); }
+            75% { transform: translateY(-3px) rotate(5deg); }
+        }
+
+        /* 砂埃のエフェクト */
+        .dust {
+            position: absolute;
+            bottom: 0;
+            left: -10px;
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: dustAnim 0.5s infinite linear;
+            opacity: 0;
+        }
+
+        @keyframes dustAnim {
+            0% { transform: translate(0, 0) scale(0.5); opacity: 0.8; }
+            100% { transform: translate(-20px, -10px) scale(1.5); opacity: 0; }
+        }
+
+        .loading-text {
+            text-shadow: 2px 2px 0px #166534;
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col items-center justify-center relative">
+
+    <!-- 背景の芝生パターン -->
+    <div class="absolute inset-0 turf pointer-events-none"></div>
+
+    <!-- メインテキストエリア -->
+    <div class="z-20 text-center mb-8 px-4 py-6 bg-black/30 backdrop-blur-sm rounded-xl border border-white/20 shadow-xl max-w-md w-11/12">
+        <h1 class="text-3xl md:text-4xl font-black text-white loading-text mb-2 tracking-wider">
+            集計結果をお待ちください
+        </h1>
+        <p class="text-white/90 font-bold text-sm md:text-base animate-pulse">
+            ただいま全速力で計算中...
+        </p>
+    </div>
+
+    <!-- トラックエリア -->
+    <div class="w-full max-w-5xl bg-green-800/20 backdrop-blur-sm border-y-4 border-yellow-500/50 relative overflow-hidden flex flex-col shadow-inner h-64 justify-center">
+        
+        <!-- 馬たちのレーン -->
+        <!-- JSで制御してランダムな速度にする -->
+        <div id="track-container" class="w-full h-full flex flex-col justify-around py-2">
+            <!-- ここに馬が生成されます -->
+        </div>
+
+        <!-- ゴールライン -->
+        <div class="absolute right-10 top-0 bottom-0 w-2 bg-white/50 z-0"></div>
+        <div class="absolute right-10 top-0 bottom-0 w-20 bg-checkered z-0 opacity-20" 
+             style="background-image: repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000); background-position: 0 0, 10px 10px; background-size: 20px 20px;"></div>
+    </div>
+
+    <!-- 実況風テキスト（ランダム表示） -->
+    <div class="mt-4 h-8 text-white font-bold text-lg text-shadow-md z-10" id="commentary">
+        <!-- JSで書き換え -->
+    </div>
+
+    <script>
+        // 馬のデータ（色とゼッケン）
+        const horses = [
+            { color: 'text-white', number: 1, bodyColor: '#ffffff' },
+            { color: 'text-gray-800', number: 2, bodyColor: '#1f2937' },
+            { color: 'text-amber-700', number: 3, bodyColor: '#b45309' }, // 鹿毛
+            { color: 'text-orange-400', number: 4, bodyColor: '#fb923c' }, // 栗毛
+            { color: 'text-gray-400', number: 5, bodyColor: '#9ca3af' }, // 芦毛
+        ];
+
+        const trackContainer = document.getElementById('track-container');
+        const commentaryEl = document.getElementById('commentary');
+
+        // ランダムな実況コメント
+        const comments = [
+            "第4コーナーを回った！",
+            "おっと、集計が伸びている！",
+            "最後の直線！",
+            "白熱した展開です！",
+            "まだかかりそうです！",
+            "各馬一斉にスタート！",
+            "サーバーが唸りを上げる！"
+        ];
+
+        // 馬を生成して走らせる関数
+        function createHorse(horseData, laneIndex) {
+            const lane = document.createElement('div');
+            lane.className = 'track-lane w-full flex-1 relative';
+            
+            // 速度と遅延をランダムにする
+            // 2.5秒〜4.5秒で横断
+            const duration = 2.5 + Math.random() * 2; 
+            // -1秒〜0秒のディレイ（見た目のバラつき）
+            const delay = Math.random() * -2; 
+
+            // 馬のコンテナ
+            const horseDiv = document.createElement('div');
+            horseDiv.className = 'horse-container flex flex-col items-center';
+            horseDiv.style.animation = `runAcross ${duration}s linear infinite`;
+            horseDiv.style.animationDelay = `${delay}s`;
+
+            // 馬のアイコン（FontAwesome + ゼッケン）
+            horseDiv.innerHTML = `
+                <div class="relative" style="animation: gallop 0.4s infinite alternate ease-in-out;">
+                    <i class="fa-solid fa-horse ${horseData.color} text-4xl md:text-5xl drop-shadow-lg" style="filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));"></i>
+                    <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border border-black shadow-sm">
+                        ${horseData.number}
+                    </div>
+                    <div class="dust"></div>
+                </div>
+            `;
+
+            lane.appendChild(horseDiv);
+            trackContainer.appendChild(lane);
+        }
+
+        // 初期化
+        function initRace() {
+            // 馬を配置
+            horses.forEach((horse, index) => {
+                createHorse(horse, index);
+            });
+
+            // 実況コメントを定期的に変更
+            setInterval(() => {
+                const randomComment = comments[Math.floor(Math.random() * comments.length)];
+                commentaryEl.innerText = randomComment;
+            }, 2500);
+        }
+
+        // スタート
+        initRace();
+
+    </script>
+</body>
+</html>
+
 
