@@ -1,293 +1,186 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ゴルフコンペ結果発表</title>
-<style>
-    body {
-        font-family: "Helvetica Neue", Arial, sans-serif;
-        background-color: #f0f2f5;
-        color: #333;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    h1 {
-        color: #444;
-        font-size: 1.5rem;
-        margin-bottom: 20px;
-    }
-    .tabs {
-        display: flex;
-        margin-bottom: 20px;
-        background: #fff;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .tab {
-        padding: 15px 30px;
-        cursor: pointer;
-        background: #fff;
-        border: none;
-        font-weight: bold;
-        color: #888;
-        transition: 0.3s;
-    }
-    .tab.active {
-        background: #2c3e50;
-        color: #fff;
-    }
-    .container {
-        width: 100%;
-        max-width: 600px;
-    }
-    .result-area {
-        display: none;
-    }
-    .result-area.active {
-        display: block;
-    }
-    .card {
-        background: #fff;
-        border-radius: 10px;
-        padding: 15px;
-        margin-bottom: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        opacity: 0;
-        transform: translateY(20px);
-        animation: fadeInUp 0.5s forwards;
-        border-left: 5px solid #ccc;
-    }
-    .card.rank-1 { border-left-color: #ffd700; background: #fffbe6; } /* 優勝 */
-    .card.rank-2 { border-left-color: #c0c0c0; }
-    .card.rank-3 { border-left-color: #cd7f32; }
-    
-    @keyframes fadeInUp {
-        to { opacity: 1; transform: translateY(0); }
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>集計中...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #4ade80; /* bg-green-400 */
+            overflow: hidden;
+        }
+        
+        /* 芝生のテクスチャ風 */
+        .turf {
+            background-image: 
+                linear-gradient(45deg, #22c55e 25%, transparent 25%, transparent 75%, #22c55e 75%, #22c55e), 
+                linear-gradient(45deg, #22c55e 25%, transparent 25%, transparent 75%, #22c55e 75%, #22c55e);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            opacity: 0.3;
+        }
 
-    .rank-badge {
-        font-size: 1.2rem;
-        font-weight: bold;
-        width: 40px;
-        text-align: center;
-        color: #555;
-    }
-    .name {
-        flex-grow: 1;
-        padding: 0 15px;
-        font-weight: bold;
-        font-size: 1.1rem;
-    }
-    .scores {
-        text-align: right;
-        font-size: 0.9rem;
-        color: #666;
-    }
-    .net-score {
-        font-size: 1.3rem;
-        font-weight: bold;
-        color: #2c3e50;
-    }
-    .controls {
-        margin-top: 20px;
-        text-align: center;
-    }
-    button.action-btn {
-        background-color: #27ae60;
-        color: white;
-        border: none;
-        padding: 15px 40px;
-        font-size: 1.2rem;
-        border-radius: 50px;
-        cursor: pointer;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        transition: transform 0.1s;
-    }
-    button.action-btn:active {
-        transform: scale(0.95);
-    }
-    button.action-btn:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-    }
-    .hidden-holes-info {
-        font-size: 0.8rem;
-        color: #999;
-        margin-top: 5px;
-        text-align: center;
-    }
-</style>
+        .track-lane {
+            border-bottom: 2px dashed rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        .horse-container {
+            position: absolute;
+            bottom: 5px;
+            /* 初期位置は画面外左 */
+            left: -100px; 
+            will-change: left, transform;
+        }
+
+        /* 走る動き（画面左から右へ） */
+        @keyframes runAcross {
+            0% { left: -10%; }
+            100% { left: 110%; }
+        }
+
+        /* パカラッパカラッという上下の動き */
+        @keyframes gallop {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-5px) rotate(-5deg); }
+            50% { transform: translateY(0) rotate(0deg); }
+            75% { transform: translateY(-3px) rotate(5deg); }
+        }
+
+        /* 砂埃のエフェクト */
+        .dust {
+            position: absolute;
+            bottom: 0;
+            left: -10px;
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: dustAnim 0.5s infinite linear;
+            opacity: 0;
+        }
+
+        @keyframes dustAnim {
+            0% { transform: translate(0, 0) scale(0.5); opacity: 0.8; }
+            100% { transform: translate(-20px, -10px) scale(1.5); opacity: 0; }
+        }
+
+        .loading-text {
+            text-shadow: 2px 2px 0px #166534;
+        }
+    </style>
 </head>
-<body>
+<body class="h-screen w-full flex flex-col items-center justify-center relative">
 
-    <h1>ゴルフコンペ結果発表</h1>
+    <!-- 背景の芝生パターン -->
+    <div class="absolute inset-0 turf pointer-events-none"></div>
 
-    <div class="tabs">
-        <button class="tab active" onclick="switchTab('in')">INコース結果</button>
-        <button class="tab" onclick="switchTab('out')">OUTコース結果</button>
+    <!-- メインテキストエリア -->
+    <div class="z-20 text-center mb-8 px-4 py-6 bg-black/30 backdrop-blur-sm rounded-xl border border-white/20 shadow-xl max-w-md w-11/12">
+        <h1 class="text-3xl md:text-4xl font-black text-white loading-text mb-2 tracking-wider">
+            集計結果をお待ちください
+        </h1>
+        <p class="text-white/90 font-bold text-sm md:text-base animate-pulse">
+            ただいま全速力で計算中...
+        </p>
     </div>
 
-    <div id="in-container" class="container result-area active">
-        <div id="in-list"></div>
-        <div class="hidden-holes-info">隠しホール: 11, 15, 16</div>
-        <div class="controls">
-            <button id="in-btn" class="action-btn" onclick="showNext('in')">結果発表開始</button>
+    <!-- トラックエリア -->
+    <div class="w-full max-w-5xl bg-green-800/20 backdrop-blur-sm border-y-4 border-yellow-500/50 relative overflow-hidden flex flex-col shadow-inner h-64 justify-center">
+        
+        <!-- 馬たちのレーン -->
+        <!-- JSで制御してランダムな速度にする -->
+        <div id="track-container" class="w-full h-full flex flex-col justify-around py-2">
+            <!-- ここに馬が生成されます -->
         </div>
+
+        <!-- ゴールライン -->
+        <div class="absolute right-10 top-0 bottom-0 w-2 bg-white/50 z-0"></div>
+        <div class="absolute right-10 top-0 bottom-0 w-20 bg-checkered z-0 opacity-20" 
+             style="background-image: repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000); background-position: 0 0, 10px 10px; background-size: 20px 20px;"></div>
     </div>
 
-    <div id="out-container" class="container result-area">
-        <div id="out-list"></div>
-        <div class="hidden-holes-info">隠しホール: 2, 4, 7</div>
-        <div class="controls">
-            <button id="out-btn" class="action-btn" onclick="showNext('out')">結果発表開始</button>
-        </div>
+    <!-- 実況風テキスト（ランダム表示） -->
+    <div class="mt-4 h-8 text-white font-bold text-lg text-shadow-md z-10" id="commentary">
+        <!-- JSで書き換え -->
     </div>
 
-<script>
-    // データ定義
-    const players = [
-        "町田 啓", "丸山 翔司", "岡田 康平", "楠田 基弘", 
-        "齋藤 迅", "酒井 勇樹", "高橋 勇希", "中村 敏朗"
-    ];
+    <script>
+        // 馬のデータ（色とゼッケン）
+        const horses = [
+            { color: 'text-white', number: 1, bodyColor: '#ffffff' },
+            { color: 'text-gray-800', number: 2, bodyColor: '#1f2937' },
+            { color: 'text-amber-700', number: 3, bodyColor: '#b45309' }, // 鹿毛
+            { color: 'text-orange-400', number: 4, bodyColor: '#fb923c' }, // 栗毛
+            { color: 'text-gray-400', number: 5, bodyColor: '#9ca3af' }, // 芦毛
+        ];
 
-    // INスコア (Hole 10-18)
-    const scoresIN = [
-        [6, 7, 5, 4, 3, 4, 6, 3, 6], // 町田
-        [8, 7, 5, 6, 4, 4, 7, 3, 6], // 丸山
-        [8, 7, 11, 7, 3, 5, 6, 6, 7], // 岡田
-        [5, 9, 6, 6, 6, 5, 7, 3, 6], // 楠田
-        [9, 8, 6, 6, 6, 6, 7, 4, 7], // 齋藤
-        [8, 6, 5, 5, 3, 5, 8, 5, 7], // 酒井
-        [6, 6, 7, 4, 4, 6, 6, 6, 8], // 高橋
-        [5, 6, 8, 8, 5, 6, 8, 6, 7]  // 中村
-    ];
-    // IN Par: 5,4,4,4,3,4,4,3,5 (Total 36)
-    // 隠しホール(IN): 11(Par4), 15(Par4), 16(Par4) -> Indices: 1, 5, 6. SumPar=12.
+        const trackContainer = document.getElementById('track-container');
+        const commentaryEl = document.getElementById('commentary');
 
-    // OUTスコア (Hole 1-9)
-    const scoresOUT = [
-        [4, 4, 6, 7, 4, 5, 4, 6, 8], // 町田
-        [5, 3, 4, 8, 3, 4, 5, 8, 6], // 丸山
-        [7, 6, 7, 8, 5, 9, 7, 6, 9], // 岡田
-        [8, 5, 9, 6, 5, 8, 6, 8, 11], // 楠田
-        [7, 6, 8, 9, 6, 6, 9, 9, 6], // 齋藤
-        [5, 7, 6, 7, 3, 6, 5, 6, 8], // 酒井
-        [6, 5, 7, 11, 7, 6, 6, 5, 7], // 高橋
-        [7, 5, 8, 7, 3, 8, 9, 5, 7]  // 中村
-    ];
-    // OUT Par: 4,3,4,5,3,4,4,4,5 (Total 36)
-    // 隠しホール(OUT): 2(Par3), 4(Par5), 7(Par4) -> Indices: 1, 3, 6. SumPar=12.
+        // ランダムな実況コメント
+        const comments = [
+            "第4コーナーを回った！",
+            "おっと、集計が伸びている！",
+            "最後の直線！",
+            "白熱した展開です！",
+            "まだかかりそうです！",
+            "各馬一斉にスタート！",
+            "サーバーが唸りを上げる！"
+        ];
 
-    // 計算ロジック (旧ペリ・9ホール版: (隠し3H合計 * 3 - 36) * 0.8)
-    function calculateRanking(scores, hiddenIndices) {
-        let results = players.map((name, i) => {
-            const row = scores[i];
-            const gross = row.reduce((a, b) => a + b, 0);
-            const hiddenSum = hiddenIndices.reduce((acc, idx) => acc + row[idx], 0);
+        // 馬を生成して走らせる関数
+        function createHorse(horseData, laneIndex) {
+            const lane = document.createElement('div');
+            lane.className = 'track-lane w-full flex-1 relative';
             
-            // ハンデ計算
-            let hdcp = (hiddenSum * 3 - 36) * 0.8;
-            // 数値調整 (通常は四捨五入か切り捨てだが、一般的なコンペアプリに合わせて小数を残す)
-            hdcp = Math.round(hdcp * 10) / 10;
-            
-            let net = gross - hdcp;
-            net = Math.round(net * 10) / 10;
+            // 速度と遅延をランダムにする
+            // 2.5秒〜4.5秒で横断
+            const duration = 2.5 + Math.random() * 2; 
+            // -1秒〜0秒のディレイ（見た目のバラつき）
+            const delay = Math.random() * -2; 
 
-            return { name, gross, hdcp, net, id: i };
-        });
+            // 馬のコンテナ
+            const horseDiv = document.createElement('div');
+            horseDiv.className = 'horse-container flex flex-col items-center';
+            horseDiv.style.animation = `runAcross ${duration}s linear infinite`;
+            horseDiv.style.animationDelay = `${delay}s`;
 
-        // ソート: ネットスコア昇順 -> グロススコア昇順
-        results.sort((a, b) => {
-            if (a.net !== b.net) return a.net - b.net;
-            return a.gross - b.gross; // グロスが良い(少ない)方が上位
-        });
+            // 馬のアイコン（FontAwesome + ゼッケン）
+            horseDiv.innerHTML = `
+                <div class="relative" style="animation: gallop 0.4s infinite alternate ease-in-out;">
+                    <i class="fa-solid fa-horse ${horseData.color} text-4xl md:text-5xl drop-shadow-lg" style="filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));"></i>
+                    <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border border-black shadow-sm">
+                        ${horseData.number}
+                    </div>
+                    <div class="dust"></div>
+                </div>
+            `;
 
-        // 順位付け
-        return results.map((item, index) => ({ ...item, rank: index + 1 }));
-    }
-
-    const resultData = {
-        in: calculateRanking(scoresIN, [1, 5, 6]),
-        out: calculateRanking(scoresOUT, [1, 3, 6])
-    };
-
-    // 表示管理ステート
-    const state = {
-        in: { currentRank: 8, finished: false },
-        out: { currentRank: 8, finished: false }
-    };
-
-    function switchTab(type) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.result-area').forEach(c => c.classList.remove('active'));
-        
-        // Find the button with correct onclick handler text is tricky, simpler selector:
-        const buttons = document.querySelectorAll('.tab');
-        if(type === 'in') buttons[0].classList.add('active');
-        else buttons[1].classList.add('active');
-
-        document.getElementById(type + '-container').classList.add('active');
-    }
-
-    function showNext(type) {
-        if (state[type].finished) return;
-
-        const rankToShow = state[type].currentRank;
-        const data = resultData[type].find(p => p.rank === rankToShow);
-        
-        if (!data) {
-            // 同率などでランク番号が飛ぶ場合の処理が必要だが、
-            // 今回は単純なリスト順(下位=配列の後ろ)で出す
-            // resultDataは1位(index 0)から8位(index 7)でソート済み
-            // なので index = rankToShow - 1 を表示すればよい
+            lane.appendChild(horseDiv);
+            trackContainer.appendChild(lane);
         }
-        
-        // 配列の後ろ（下位）から取得
-        const index = rankToShow - 1; 
-        const playerData = resultData[type][index];
 
-        const container = document.getElementById(type + '-list');
-        const card = document.createElement('div');
-        card.className = `card rank-${playerData.rank}`;
-        card.innerHTML = `
-            <div class="rank-badge">${playerData.rank}位</div>
-            <div class="name">${playerData.name}</div>
-            <div class="scores">
-                Gross: ${playerData.gross} / HDCP: ${playerData.hdcp.toFixed(1)}
-            </div>
-            <div class="net-score" style="margin-left:15px;">${playerData.net.toFixed(1)}</div>
-        `;
-        
-        // リストの先頭に追加（上に追加されていく）
-        container.insertBefore(card, container.firstChild);
+        // 初期化
+        function initRace() {
+            // 馬を配置
+            horses.forEach((horse, index) => {
+                createHorse(horse, index);
+            });
 
-        state[type].currentRank--;
-
-        const btn = document.getElementById(type + '-btn');
-        if (state[type].currentRank < 1) {
-            state[type].finished = true;
-            btn.textContent = "発表終了";
-            btn.disabled = true;
-            btn.style.backgroundColor = "#95a5a6";
-        } else {
-            if (state[type].currentRank === 1) {
-                btn.textContent = "優勝者を発表";
-                btn.style.backgroundColor = "#f1c40f";
-                btn.style.color = "#333";
-            } else {
-                btn.textContent = `第${state[type].currentRank}位を表示`;
-            }
+            // 実況コメントを定期的に変更
+            setInterval(() => {
+                const randomComment = comments[Math.floor(Math.random() * comments.length)];
+                commentaryEl.innerText = randomComment;
+            }, 2500);
         }
-    }
-</script>
 
+        // スタート
+        initRace();
+
+    </script>
 </body>
 </html>
+
