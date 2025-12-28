@@ -3,183 +3,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>集計中...</title>
+    <title>Winter Golf Comp Results</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            background-color: #4ade80; /* bg-green-400 */
-            overflow: hidden;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #f1f5f9; margin: 0; }
+        .ranking-item { transition: all 0.3s ease-out; opacity: 0; transform: translateY(10px); }
+        .ranking-item.show { opacity: 1; transform: translateY(0); }
         
-        /* 芝生のテクスチャ風 */
-        .turf {
-            background-image: 
-                linear-gradient(45deg, #22c55e 25%, transparent 25%, transparent 75%, #22c55e 75%, #22c55e), 
-                linear-gradient(45deg, #22c55e 25%, transparent 25%, transparent 75%, #22c55e 75%, #22c55e);
-            background-size: 20px 20px;
-            background-position: 0 0, 10px 10px;
-            opacity: 0.3;
-        }
+        .reveal-winner { order: 1; background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%); border: 2px solid #eab308; }
+        .reveal-last { order: 2; background-color: #1e293b; color: #ffffff; border: 2px solid #ef4444; }
+        .reveal-others { order: 3; background-color: #ffffff; border: 1px solid #e2e8f0; }
+        .reveal-runnerup { background-color: #eef2ff; border: 1px solid #c7d2fe; }
 
-        .track-lane {
-            border-bottom: 2px dashed rgba(255, 255, 255, 0.3);
-            position: relative;
-        }
-
-        .horse-container {
-            position: absolute;
-            bottom: 5px;
-            /* 初期位置は画面外左 */
-            left: -100px; 
-            will-change: left, transform;
-        }
-
-        /* 走る動き（画面左から右へ） */
-        @keyframes runAcross {
-            0% { left: -10%; }
-            100% { left: 110%; }
-        }
-
-        /* パカラッパカラッという上下の動き */
-        @keyframes gallop {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            25% { transform: translateY(-5px) rotate(-5deg); }
-            50% { transform: translateY(0) rotate(0deg); }
-            75% { transform: translateY(-3px) rotate(5deg); }
-        }
-
-        /* 砂埃のエフェクト */
-        .dust {
-            position: absolute;
-            bottom: 0;
-            left: -10px;
-            width: 8px;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.6);
-            border-radius: 50%;
-            animation: dustAnim 0.5s infinite linear;
-            opacity: 0;
-        }
-
-        @keyframes dustAnim {
-            0% { transform: translate(0, 0) scale(0.5); opacity: 0.8; }
-            100% { transform: translate(-20px, -10px) scale(1.5); opacity: 0; }
-        }
-
-        .loading-text {
-            text-shadow: 2px 2px 0px #166534;
-        }
+        .item-text { color: #1e293b; }
+        .reveal-last .item-text, .summary-last .item-text { color: #ffffff !important; }
+        .reveal-last .sub-text, .summary-last .sub-text { color: #94a3b8 !important; }
+        .sub-text { color: #64748b; }
+        
+        .summary-winner { background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%); border: 1px solid #eab308; }
+        .summary-last { background-color: #1e293b; color: #ffffff; border: 1px solid #ef4444; }
+        .summary-runnerup { background-color: #eef2ff; border: 1px solid #c7d2fe; }
     </style>
 </head>
-<body class="h-screen w-full flex flex-col items-center justify-center relative">
+<body class="w-full min-h-screen flex flex-col">
+    <div id="app" class="w-full h-screen flex flex-col bg-white overflow-hidden">
+        <header class="bg-slate-900 text-white px-4 py-3 shrink-0">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-lg font-black tracking-tight uppercase leading-none">Winter Golf Comp</h1>
+                    <p id="course-label" class="text-[9px] font-bold opacity-60 tracking-widest uppercase mt-1">OUT COURSE</p>
+                </div>
+                <div id="hidden-info" class="text-[9px] bg-slate-800 px-2 py-1 rounded border border-slate-700 font-bold uppercase">
+                    HIDDEN: -
+                </div>
+            </div>
+        </header>
 
-    <!-- 背景の芝生パターン -->
-    <div class="absolute inset-0 turf pointer-events-none"></div>
+        <nav class="flex border-b text-[10px] font-black bg-slate-50 shrink-0">
+            <button onclick="changeTab('OUT')" id="tab-OUT" class="flex-1 py-3 text-slate-900 border-b-4 border-slate-900 bg-white">OUT</button>
+            <button onclick="changeTab('IN')" id="tab-IN" class="flex-1 py-3 text-slate-400 hover:text-slate-600 border-b-4 border-transparent">IN</button>
+            <button onclick="changeTab('SUMMARY')" id="tab-SUMMARY" class="flex-1 py-3 text-slate-400 hover:text-slate-600 border-b-4 border-transparent border-l">RESULTS LIST</button>
+        </nav>
 
-    <!-- メインテキストエリア -->
-    <div class="z-20 text-center mb-8 px-4 py-6 bg-black/30 backdrop-blur-sm rounded-xl border border-white/20 shadow-xl max-w-md w-11/12">
-        <h1 class="text-3xl md:text-4xl font-black text-white loading-text mb-2 tracking-wider">
-            集計結果をお待ちください
-        </h1>
-        <p class="text-white/90 font-bold text-sm md:text-base animate-pulse">
-            ただいま全速力で計算中...
-        </p>
-    </div>
+        <main id="main-content" class="flex-1 flex flex-col relative overflow-hidden bg-slate-50">
+            <div id="action-bar" class="p-3 bg-slate-50/90 backdrop-blur-sm border-b border-slate-200 z-20 shrink-0 flex justify-center">
+                <button id="reveal-btn" onclick="revealRank()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-full font-black text-xs shadow-lg transition-all active:scale-95">
+                    結果を順に発表する
+                </button>
+            </div>
 
-    <!-- トラックエリア -->
-    <div class="w-full max-w-5xl bg-green-800/20 backdrop-blur-sm border-y-4 border-yellow-500/50 relative overflow-hidden flex flex-col shadow-inner h-64 justify-center">
-        
-        <!-- 馬たちのレーン -->
-        <!-- JSで制御してランダムな速度にする -->
-        <div id="track-container" class="w-full h-full flex flex-col justify-around py-2">
-            <!-- ここに馬が生成されます -->
+            <div id="ranking-list" class="flex-1 overflow-y-auto p-2 flex flex-col gap-1.5 content-start pb-10">
+            </div>
+        </main>
+
+        <div id="summary-view" class="hidden flex-1 p-4 overflow-y-auto bg-white">
+            <div id="summary-container" class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto"></div>
         </div>
-
-        <!-- ゴールライン -->
-        <div class="absolute right-10 top-0 bottom-0 w-2 bg-white/50 z-0"></div>
-        <div class="absolute right-10 top-0 bottom-0 w-20 bg-checkered z-0 opacity-20" 
-             style="background-image: repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000); background-position: 0 0, 10px 10px; background-size: 20px 20px;"></div>
-    </div>
-
-    <!-- 実況風テキスト（ランダム表示） -->
-    <div class="mt-4 h-8 text-white font-bold text-lg text-shadow-md z-10" id="commentary">
-        <!-- JSで書き換え -->
     </div>
 
     <script>
-        // 馬のデータ（色とゼッケン）
-        const horses = [
-            { color: 'text-white', number: 1, bodyColor: '#ffffff' },
-            { color: 'text-gray-800', number: 2, bodyColor: '#1f2937' },
-            { color: 'text-amber-700', number: 3, bodyColor: '#b45309' }, // 鹿毛
-            { color: 'text-orange-400', number: 4, bodyColor: '#fb923c' }, // 栗毛
-            { color: 'text-gray-400', number: 5, bodyColor: '#9ca3af' }, // 芦毛
+        // 画像から抽出した7名分の全スコアデータ
+        const players = [
+            { name: "生野 雅人", scores: [8, 4, 6, 11, 4, 5, 9, 5, 6, 6, 7, 7, 7, 3, 5, 5, 4, 5] },
+            { name: "北原 研二", scores: [5, 4, 4, 7, 7, 6, 7, 6, 8, 7, 6, 6, 8, 3, 6, 3, 5, 5] },
+            { name: "井口 茂大", scores: [8, 5, 5, 8, 8, 6, 8, 6, 5, 8, 6, 5, 7, 3, 7, 4, 7, 6] },
+            { name: "伊藤 拓哉", scores: [6, 3, 6, 4, 5, 5, 5, 3, 5, 9, 5, 6, 6, 6, 4, 3, 7, 7] },
+            { name: "町田 啓", scores: [8, 3, 5, 6, 5, 3, 5, 5, 5, 7, 4, 6, 5, 3, 4, 6, 6, 5] },
+            { name: "仲山 敏", scores: [4, 3, 4, 5, 5, 4, 4, 5, 3, 5, 4, 4, 7, 4, 5, 3, 4, 5] },
+            { name: "原藤 大輔", scores: [5, 3, 5, 6, 6, 4, 4, 5, 5, 6, 5, 4, 5, 3, 4, 4, 4, 5] }
         ];
 
-        const trackContainer = document.getElementById('track-container');
-        const commentaryEl = document.getElementById('commentary');
+        // ハンデホールの設定
+        // OUT: Par5(4H), Par3(6H), Par4(7H) -> index: [3, 5, 6]
+        // IN: Par5(13H), Par3(14H), Par4(15H) -> index: [12, 13, 14]
+        const config = {
+            OUT: { hHoles: [4, 6, 7], hIdx: [3, 5, 6] },
+            IN: { hHoles: [13, 14, 15], hIdx: [12, 13, 14] }
+        };
 
-        // ランダムな実況コメント
-        const comments = [
-            "第4コーナーを回った！",
-            "おっと、集計が伸びている！",
-            "最後の直線！",
-            "白熱した展開です！",
-            "まだかかりそうです！",
-            "各馬一斉にスタート！",
-            "サーバーが唸りを上げる！"
-        ];
+        let activeMode = 'OUT';
+        let sortedPlayers = [];
+        let revealedIdx = 0;
 
-        // 馬を生成して走らせる関数
-        function createHorse(horseData, laneIndex) {
-            const lane = document.createElement('div');
-            lane.className = 'track-lane w-full flex-1 relative';
-            
-            // 速度と遅延をランダムにする
-            // 2.5秒〜4.5秒で横断
-            const duration = 2.5 + Math.random() * 2; 
-            // -1秒〜0秒のディレイ（見た目のバラつき）
-            const delay = Math.random() * -2; 
+        function calc(mode) {
+            const start = mode === 'OUT' ? 0 : 9;
+            const hIndices = config[mode].hIdx;
+            return players.map(p => {
+                const s = p.scores.slice(start, start + 9);
+                const g = s.reduce((a, b) => a + b, 0);
+                // 隠し3ホールの合計
+                const hSum = hIndices.reduce((sum, i) => sum + p.scores[i], 0);
+                // 簡易新ペリア方式 (3ホール合計 * 3 - 規定36) * 0.8
+                const hdcp = (hSum * 3 - 36) * 0.8;
+                return { 
+                    name: p.name, 
+                    gross: g, 
+                    hdcp: hdcp, 
+                    net: parseFloat((g - hdcp).toFixed(1)) 
+                };
+            }).sort((a, b) => a.net !== b.net ? a.net - b.net : a.gross - b.gross);
+        }
 
-            // 馬のコンテナ
-            const horseDiv = document.createElement('div');
-            horseDiv.className = 'horse-container flex flex-col items-center';
-            horseDiv.style.animation = `runAcross ${duration}s linear infinite`;
-            horseDiv.style.animationDelay = `${delay}s`;
+        function initApp() {
+            sortedPlayers = calc(activeMode);
+            revealedIdx = 0;
+            document.getElementById('ranking-list').innerHTML = '';
+            document.getElementById('action-bar').classList.remove('hidden');
+            document.getElementById('course-label').textContent = `${activeMode} COURSE`;
+            document.getElementById('hidden-info').textContent = `HIDDEN: ${config[activeMode].hHoles.join(', ')}`;
+            document.getElementById('reveal-btn').textContent = '結果を順に発表する';
+        }
 
-            // 馬のアイコン（FontAwesome + ゼッケン）
-            horseDiv.innerHTML = `
-                <div class="relative" style="animation: gallop 0.4s infinite alternate ease-in-out;">
-                    <i class="fa-solid fa-horse ${horseData.color} text-4xl md:text-5xl drop-shadow-lg" style="filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));"></i>
-                    <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border border-black shadow-sm">
-                        ${horseData.number}
-                    </div>
-                    <div class="dust"></div>
+        function revealRank() {
+            const len = sortedPlayers.length;
+            const middleLimit = len - 2;
+
+            if (revealedIdx < middleLimit) {
+                const target = (len - 2) - revealedIdx;
+                const p = sortedPlayers[target];
+                const isRunnerUp = (target + 1) === 2;
+                const label = isRunnerUp ? "準優勝" : `${target + 1}位`;
+                const cls = `reveal-others ${isRunnerUp ? 'reveal-runnerup' : ''}`;
+                
+                addCard(label, p, cls, true);
+                revealedIdx++;
+
+                if (revealedIdx === middleLimit) {
+                    document.getElementById('reveal-btn').textContent = '優勝とラスを発表する';
+                }
+            } else if (revealedIdx === middleLimit) {
+                const winner = sortedPlayers[0];
+                const last = sortedPlayers[len - 1];
+                
+                addCard('優勝', winner, 'reveal-winner shadow-md font-black scale-105 my-1', true);
+                addCard('ラス 💀', last, 'reveal-last shadow-md scale-105 my-1', true); 
+
+                document.getElementById('action-bar').classList.add('hidden');
+            }
+        }
+
+        function addCard(label, data, cls, isPrepend) {
+            const list = document.getElementById('ranking-list');
+            const div = document.createElement('div');
+            div.className = `ranking-item show p-2 px-4 rounded-lg flex justify-between items-center mx-auto w-full max-w-2xl ${cls}`;
+            div.innerHTML = `
+                <div class="flex flex-col min-w-0">
+                    <span class="text-[7px] font-black uppercase tracking-widest opacity-60 mb-0.5">${label}</span>
+                    <span class="text-[11px] font-black truncate item-text uppercase">${data.name}</span>
+                </div>
+                <div class="text-right shrink-0 ml-3">
+                    <div class="text-[7px] font-bold sub-text">G:${data.gross} H:${data.hdcp.toFixed(1)}</div>
+                    <div class="text-base font-black tracking-tight leading-none item-text">${data.net.toFixed(1)}</div>
                 </div>
             `;
-
-            lane.appendChild(horseDiv);
-            trackContainer.appendChild(lane);
+            if (isPrepend) list.prepend(div);
+            else list.appendChild(div);
         }
 
-        // 初期化
-        function initRace() {
-            // 馬を配置
-            horses.forEach((horse, index) => {
-                createHorse(horse, index);
+        function changeTab(tab) {
+            activeMode = tab;
+            ['OUT', 'IN', 'SUMMARY'].forEach(t => {
+                const b = document.getElementById(`tab-${t}`);
+                if (t === tab) {
+                    b.className = "flex-1 py-3 text-slate-900 border-b-4 border-slate-900 bg-white transition-all";
+                } else {
+                    b.className = "flex-1 py-3 text-slate-400 hover:text-slate-600 border-b-4 border-transparent transition-all" + (t === 'SUMMARY' ? ' border-l' : '');
+                }
             });
 
-            // 実況コメントを定期的に変更
-            setInterval(() => {
-                const randomComment = comments[Math.floor(Math.random() * comments.length)];
-                commentaryEl.innerText = randomComment;
-            }, 2500);
+            if (tab === 'SUMMARY') {
+                document.getElementById('main-content').classList.add('hidden');
+                document.getElementById('summary-view').classList.remove('hidden');
+                renderSummary();
+            } else {
+                document.getElementById('main-content').classList.remove('hidden');
+                document.getElementById('summary-view').classList.add('hidden');
+                initApp();
+            }
         }
 
-        // スタート
-        initRace();
+        function renderSummary() {
+            const container = document.getElementById('summary-container');
+            container.innerHTML = '';
+            
+            ['OUT', 'IN'].forEach(m => {
+                const data = calc(m);
+                const block = document.createElement('div');
+                block.className = "flex flex-col mb-8";
+                block.innerHTML = `
+                    <div class="flex items-end justify-between mb-3 border-b-2 border-slate-900 pb-1.5">
+                        <h2 class="text-sm font-black tracking-tighter text-slate-900 uppercase">${m} RESULTS</h2>
+                        <span class="text-[8px] font-bold text-slate-400 uppercase">Hidden: ${config[m].hHoles.join(', ')}</span>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        ${data.map((d, i) => {
+                            let label = `${i + 1}位`;
+                            let cls = "bg-white border-slate-100";
+                            if (i === 0) { label = "優勝"; cls = "summary-winner"; }
+                            else if (i === 1) { label = "準優勝"; cls = "summary-runnerup"; }
+                            else if (i === data.length - 1) { label = "ラス 💀"; cls = "summary-last"; }
+                            
+                            return `
+                                <div class="flex items-center justify-between p-1.5 px-3 rounded border text-[10px] ${cls}">
+                                    <span class="w-10 font-black opacity-60 uppercase">${label}</span>
+                                    <span class="flex-1 font-bold truncate mx-3 item-text uppercase tracking-tight">${d.name}</span>
+                                    <span class="font-black text-xs text-right item-text">${d.net.toFixed(1)}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                container.appendChild(block);
+            });
+        }
 
+        window.onload = initApp;
     </script>
 </body>
 </html>
