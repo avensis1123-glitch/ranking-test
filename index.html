@@ -171,32 +171,24 @@
         const commentaryContent = document.getElementById('commentary-content');
         
         let isRunning = true;
-        let currentPhase = 0;
 
         // 指定ミリ秒待機するユーティリティ
         const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
         // 馬の位置を更新する関数
-        // progressは基準となる進行度（%）。各馬に少しランダムなブレを持たせる。
         function updateHorses(progress, transitionTime) {
             horses.forEach((horse) => {
-                // アニメーション時間を動的に設定
                 horse.style.transition = `left ${transitionTime}ms linear`;
                 
                 if (progress >= 110) {
-                    // ループ時は画面外まで走り抜ける
                     const randomOffset = Math.random() * 20;
                     horse.style.left = `calc(${progress + randomOffset}% + 50px)`;
                 } else if (progress === 0) {
-                    // スタート位置へリセット（アニメーションを切って即座に移動）
                     horse.style.transition = 'none';
                     horse.style.left = '-50px';
                 } else {
-                    // 通常の進行
-                    // 基準位置に対して-5%〜+5%のランダムな位置変動（抜きつ抜かれつを演出）
                     const randomFluctuation = (Math.random() * 10) - 5;
                     let targetPos = progress + randomFluctuation;
-                    // 画面外に出ないように制限
                     targetPos = Math.max(5, Math.min(targetPos, 90));
                     horse.style.left = `calc(${targetPos}% - 30px)`;
                 }
@@ -207,51 +199,37 @@
         async function typeWriterEffect(text) {
             commentaryContent.textContent = '';
             for (let i = 0; i < text.length; i++) {
-                if (!isRunning) return; // 完了ボタンが押されたら即中断
+                if (!isRunning) return;
                 commentaryContent.textContent += text.charAt(i);
-                await sleep(30); // 1文字あたりの表示速度
+                await sleep(30);
             }
         }
 
         async function startRaceLoop() {
             while (isRunning) {
-                // フェーズを順に実行
                 for (let i = 0; i < phases.length; i++) {
                     if (!isRunning) break;
                     
                     const phase = phases[i];
-                    
-                    // 馬を移動させる
                     updateHorses(phase.progress, phase.duration);
-                    
-                    // 実況テキストを更新
-                    // awaitを付けずに非同期で実行し、指定時間(duration)待つ間にタイピング演出が終わるようにする
                     typeWriterEffect(phase.text);
                     
-                    // 次のフェーズまでの待機時間
                     let elapsed = 0;
                     const checkInterval = 100;
                     while(elapsed < phase.duration) {
-                        if (!isRunning) return; // 待機中も終了フラグを監視
+                        if (!isRunning) return;
                         await sleep(checkInterval);
                         elapsed += checkInterval;
                     }
                 }
 
                 if (!isRunning) break;
-
-                // ループ完了時（もう一周だぁぁぁ！の後）
-                await sleep(500); // 画面外に走り抜けるのを少し待つ
-                
-                // 位置をリセット（アニメーションなし）
+                await sleep(500); 
                 updateHorses(0, 0);
-                
-                // リセットがブラウザに反映されるのを待つため1フレーム待機
                 await sleep(50);
             }
         }
 
-        // ページ読み込み完了時にループ開始
         window.onload = () => {
             startRaceLoop();
         };
