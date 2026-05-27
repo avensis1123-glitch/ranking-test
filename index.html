@@ -1,225 +1,263 @@
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Winter Golf Comp Results</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>スコア集計中...</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
-        body { font-family: 'Noto Sans JP', sans-serif; background-color: #f1f5f9; margin: 0; }
-        .ranking-item { transition: all 0.3s ease-out; opacity: 0; transform: translateY(10px); }
-        .ranking-item.show { opacity: 1; transform: translateY(0); }
-        
-        .reveal-winner { order: 1; background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%); border: 2px solid #eab308; }
-        .reveal-last { order: 2; background-color: #1e293b; color: #ffffff; border: 2px solid #ef4444; }
-        .reveal-others { order: 3; background-color: #ffffff; border: 1px solid #e2e8f0; }
-        .reveal-runnerup { background-color: #eef2ff; border: 1px solid #c7d2fe; }
+        :root {
+            --turf-color: #2d6a4f;
+            --dirt-color: #9c6644;
+            --text-main: #1b4332;
+        }
 
-        .item-text { color: #1e293b; }
-        .reveal-last .item-text, .summary-last .item-text { color: #ffffff !important; }
-        .reveal-last .sub-text, .summary-last .sub-text { color: #94a3b8 !important; }
-        .sub-text { color: #64748b; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: #f0fdf4;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            width: 100%;
+            background-color: var(--text-main);
+            color: white;
+            text-align: center;
+            padding: 1rem 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .race-container {
+            width: 95%;
+            max-width: 800px;
+            margin: 2rem auto;
+            background-color: var(--turf-color);
+            border-radius: 12px;
+            padding: 1rem 0;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3), 0 10px 15px -3px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .track-line {
+            height: 60px;
+            background-color: var(--dirt-color);
+            margin: 10px 0;
+            position: relative;
+            border-top: 2px dashed rgba(255,255,255,0.3);
+            border-bottom: 2px dashed rgba(255,255,255,0.3);
+        }
+
+        .horse {
+            font-size: 40px;
+            position: absolute;
+            left: -50px;
+            top: 5px;
+            transition: left 1s linear;
+            /* scaleX(-1)で反転させるため、影のX方向を逆に調整 */
+            filter: drop-shadow(-2px 4px 2px rgba(0,0,0,0.4));
+            transform: scaleX(-1);
+            display: inline-block;
+        }
+
+        /* 走っているように見せる上下のバウンドアニメーション（右向き反転を維持） */
+        @keyframes gallop {
+            0%, 100% { transform: scaleX(-1) translateY(0) rotate(0deg); }
+            25% { transform: scaleX(-1) translateY(-5px) rotate(5deg); }
+            50% { transform: scaleX(-1) translateY(0) rotate(0deg); }
+            75% { transform: scaleX(-1) translateY(2px) rotate(-5deg); }
+        }
+
+        .galloping {
+            animation: gallop 0.4s infinite;
+        }
         
-        .summary-winner { background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%); border: 1px solid #eab308; }
-        .summary-last { background-color: #1e293b; color: #ffffff; border: 1px solid #ef4444; }
-        .summary-runnerup { background-color: #eef2ff; border: 1px solid #c7d2fe; }
+        .horse:nth-child(2) { animation-duration: 0.35s; }
+        .horse:nth-child(3) { animation-duration: 0.45s; }
+
+        .commentary-box {
+            width: 95%;
+            max-width: 800px;
+            background-color: white;
+            border: 4px solid var(--turf-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .commentary-title {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background-color: #dc2626;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .commentary-text {
+            font-size: 1.25rem;
+            line-height: 1.6;
+            font-weight: bold;
+            min-height: 3em;
+            display: flex;
+            align-items: center;
+        }
+
+        .blinking-cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: var(--text-main);
+            margin-left: 5px;
+            vertical-align: middle;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
     </style>
 </head>
-<body class="w-full min-h-screen flex flex-col">
-    <div id="app" class="w-full h-screen flex flex-col bg-white overflow-hidden">
-        <header class="bg-slate-900 text-white px-4 py-3 shrink-0">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-lg font-black tracking-tight uppercase leading-none">Winter Golf Comp</h1>
-                    <p id="course-label" class="text-[9px] font-bold opacity-60 tracking-widest uppercase mt-1">OUT COURSE</p>
-                </div>
-                <div id="hidden-info" class="text-[9px] bg-slate-800 px-2 py-1 rounded border border-slate-700 font-bold uppercase">
-                    HIDDEN: -
-                </div>
-            </div>
-        </header>
+<body>
 
-        <nav class="flex border-b text-[10px] font-black bg-slate-50 shrink-0">
-            <button onclick="changeTab('OUT')" id="tab-OUT" class="flex-1 py-3 text-slate-900 border-b-4 border-slate-900 bg-white">OUT</button>
-            <button onclick="changeTab('IN')" id="tab-IN" class="flex-1 py-3 text-slate-400 hover:text-slate-600 border-b-4 border-transparent">IN</button>
-            <button onclick="changeTab('SUMMARY')" id="tab-SUMMARY" class="flex-1 py-3 text-slate-400 hover:text-slate-600 border-b-4 border-transparent border-l">RESULTS LIST</button>
-        </nav>
+    <div class="header">⛳ スコア集計中...</div>
 
-        <main id="main-content" class="flex-1 flex flex-col relative overflow-hidden bg-slate-50">
-            <div id="action-bar" class="p-3 bg-slate-50/90 backdrop-blur-sm border-b border-slate-200 z-20 shrink-0 flex justify-center">
-                <button id="reveal-btn" onclick="revealRank()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-full font-black text-xs shadow-lg transition-all active:scale-95">
-                    結果を順に発表する
-                </button>
-            </div>
+    <div class="race-container">
+        <div class="track-line"><div class="horse galloping" id="horse1">🏇</div></div>
+        <div class="track-line"><div class="horse galloping" id="horse2">🏇</div></div>
+        <div class="track-line"><div class="horse galloping" id="horse3">🏇</div></div>
+    </div>
 
-            <div id="ranking-list" class="flex-1 overflow-y-auto p-2 flex flex-col gap-1.5 content-start pb-10">
-            </div>
-        </main>
-
-        <div id="summary-view" class="hidden flex-1 p-4 overflow-y-auto bg-white">
-            <div id="summary-container" class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto"></div>
+    <div class="commentary-box">
+        <div class="commentary-title">LIVE 実況</div>
+        <div class="commentary-text">
+            <span id="commentary-content">準備中...</span><span class="blinking-cursor"></span>
         </div>
     </div>
 
     <script>
-        // 画像から抽出した7名分の全スコアデータ
-        const players = [
-            { name: "生野 雅人", scores: [8, 4, 6, 11, 4, 5, 9, 5, 6, 6, 7, 7, 7, 3, 5, 5, 4, 5] },
-            { name: "北原 研二", scores: [5, 4, 4, 7, 7, 6, 7, 6, 8, 7, 6, 6, 8, 3, 6, 3, 5, 5] },
-            { name: "井口 茂大", scores: [8, 5, 5, 8, 8, 6, 8, 6, 5, 8, 6, 5, 7, 3, 7, 4, 7, 6] },
-            { name: "伊藤 拓哉", scores: [6, 3, 6, 4, 5, 5, 5, 3, 5, 9, 5, 6, 6, 6, 4, 3, 7, 7] },
-            { name: "町田 啓", scores: [8, 3, 5, 6, 5, 3, 5, 5, 5, 7, 4, 6, 5, 3, 4, 6, 6, 5] },
-            { name: "仲山 敏", scores: [4, 3, 4, 5, 5, 4, 4, 5, 3, 5, 4, 4, 7, 4, 5, 3, 4, 5] },
-            { name: "原藤 大輔", scores: [5, 3, 5, 6, 6, 4, 4, 5, 5, 6, 5, 4, 5, 3, 4, 4, 4, 5] }
+        // 実況フェーズの定義
+        const phases = [
+            { text: "各プレイヤー、一斉にスタート！ただいまスコアカードを猛烈な勢いで回収中！", progress: 15, duration: 4000 },
+            { text: "第1コーナーを回る！バーディ、ボギーが入り乱れる大混戦！計算機が唸りを上げております！", progress: 35, duration: 4000 },
+            { text: "第3コーナーから第4コーナーへ！ペリア方式の隠しホールが牙を剥く！ハンデ調整で順位がわからなくなってきた！", progress: 55, duration: 5000 },
+            { text: "さあ、最後の直線に入った！幹事の指先がキーボードの上を激しく舞う！", progress: 75, duration: 4000 },
+            { text: "残り200メートル！集計完了まであとわずか！トップ集団のスコアが並んでいる！", progress: 85, duration: 4000 },
+            { text: "残り100！あともう少し！最終確認中！...おっと、まだ計算が合わない！スコアカードの字が汚くて読めないぞぉぉぉ！もう一周だぁぁぁ！", progress: 110, duration: 5000 }
         ];
 
-        // ハンデホールの設定
-        // OUT: Par5(4H), Par3(6H), Par4(7H) -> index: [3, 5, 6]
-        // IN: Par5(13H), Par3(14H), Par4(15H) -> index: [12, 13, 14]
-        const config = {
-            OUT: { hHoles: [4, 6, 7], hIdx: [3, 5, 6] },
-            IN: { hHoles: [13, 14, 15], hIdx: [12, 13, 14] }
-        };
+        const horses = [
+            document.getElementById('horse1'),
+            document.getElementById('horse2'),
+            document.getElementById('horse3')
+        ];
+        const commentaryContent = document.getElementById('commentary-content');
+        
+        let isRunning = true;
+        let currentPhase = 0;
 
-        let activeMode = 'OUT';
-        let sortedPlayers = [];
-        let revealedIdx = 0;
+        // 指定ミリ秒待機するユーティリティ
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-        function calc(mode) {
-            const start = mode === 'OUT' ? 0 : 9;
-            const hIndices = config[mode].hIdx;
-            return players.map(p => {
-                const s = p.scores.slice(start, start + 9);
-                const g = s.reduce((a, b) => a + b, 0);
-                // 隠し3ホールの合計
-                const hSum = hIndices.reduce((sum, i) => sum + p.scores[i], 0);
-                // 簡易新ペリア方式 (3ホール合計 * 3 - 規定36) * 0.8
-                const hdcp = (hSum * 3 - 36) * 0.8;
-                return { 
-                    name: p.name, 
-                    gross: g, 
-                    hdcp: hdcp, 
-                    net: parseFloat((g - hdcp).toFixed(1)) 
-                };
-            }).sort((a, b) => a.net !== b.net ? a.net - b.net : a.gross - b.gross);
-        }
-
-        function initApp() {
-            sortedPlayers = calc(activeMode);
-            revealedIdx = 0;
-            document.getElementById('ranking-list').innerHTML = '';
-            document.getElementById('action-bar').classList.remove('hidden');
-            document.getElementById('course-label').textContent = `${activeMode} COURSE`;
-            document.getElementById('hidden-info').textContent = `HIDDEN: ${config[activeMode].hHoles.join(', ')}`;
-            document.getElementById('reveal-btn').textContent = '結果を順に発表する';
-        }
-
-        function revealRank() {
-            const len = sortedPlayers.length;
-            const middleLimit = len - 2;
-
-            if (revealedIdx < middleLimit) {
-                const target = (len - 2) - revealedIdx;
-                const p = sortedPlayers[target];
-                const isRunnerUp = (target + 1) === 2;
-                const label = isRunnerUp ? "準優勝" : `${target + 1}位`;
-                const cls = `reveal-others ${isRunnerUp ? 'reveal-runnerup' : ''}`;
+        // 馬の位置を更新する関数
+        // progressは基準となる進行度（%）。各馬に少しランダムなブレを持たせる。
+        function updateHorses(progress, transitionTime) {
+            horses.forEach((horse) => {
+                // アニメーション時間を動的に設定
+                horse.style.transition = `left ${transitionTime}ms linear`;
                 
-                addCard(label, p, cls, true);
-                revealedIdx++;
-
-                if (revealedIdx === middleLimit) {
-                    document.getElementById('reveal-btn').textContent = '優勝とラスを発表する';
-                }
-            } else if (revealedIdx === middleLimit) {
-                const winner = sortedPlayers[0];
-                const last = sortedPlayers[len - 1];
-                
-                addCard('優勝', winner, 'reveal-winner shadow-md font-black scale-105 my-1', true);
-                addCard('ラス 💀', last, 'reveal-last shadow-md scale-105 my-1', true); 
-
-                document.getElementById('action-bar').classList.add('hidden');
-            }
-        }
-
-        function addCard(label, data, cls, isPrepend) {
-            const list = document.getElementById('ranking-list');
-            const div = document.createElement('div');
-            div.className = `ranking-item show p-2 px-4 rounded-lg flex justify-between items-center mx-auto w-full max-w-2xl ${cls}`;
-            div.innerHTML = `
-                <div class="flex flex-col min-w-0">
-                    <span class="text-[7px] font-black uppercase tracking-widest opacity-60 mb-0.5">${label}</span>
-                    <span class="text-[11px] font-black truncate item-text uppercase">${data.name}</span>
-                </div>
-                <div class="text-right shrink-0 ml-3">
-                    <div class="text-[7px] font-bold sub-text">G:${data.gross} H:${data.hdcp.toFixed(1)}</div>
-                    <div class="text-base font-black tracking-tight leading-none item-text">${data.net.toFixed(1)}</div>
-                </div>
-            `;
-            if (isPrepend) list.prepend(div);
-            else list.appendChild(div);
-        }
-
-        function changeTab(tab) {
-            activeMode = tab;
-            ['OUT', 'IN', 'SUMMARY'].forEach(t => {
-                const b = document.getElementById(`tab-${t}`);
-                if (t === tab) {
-                    b.className = "flex-1 py-3 text-slate-900 border-b-4 border-slate-900 bg-white transition-all";
+                if (progress >= 110) {
+                    // ループ時は画面外まで走り抜ける
+                    const randomOffset = Math.random() * 20;
+                    horse.style.left = `calc(${progress + randomOffset}% + 50px)`;
+                } else if (progress === 0) {
+                    // スタート位置へリセット（アニメーションを切って即座に移動）
+                    horse.style.transition = 'none';
+                    horse.style.left = '-50px';
                 } else {
-                    b.className = "flex-1 py-3 text-slate-400 hover:text-slate-600 border-b-4 border-transparent transition-all" + (t === 'SUMMARY' ? ' border-l' : '');
+                    // 通常の進行
+                    // 基準位置に対して-5%〜+5%のランダムな位置変動（抜きつ抜かれつを演出）
+                    const randomFluctuation = (Math.random() * 10) - 5;
+                    let targetPos = progress + randomFluctuation;
+                    // 画面外に出ないように制限
+                    targetPos = Math.max(5, Math.min(targetPos, 90));
+                    horse.style.left = `calc(${targetPos}% - 30px)`;
                 }
             });
+        }
 
-            if (tab === 'SUMMARY') {
-                document.getElementById('main-content').classList.add('hidden');
-                document.getElementById('summary-view').classList.remove('hidden');
-                renderSummary();
-            } else {
-                document.getElementById('main-content').classList.remove('hidden');
-                document.getElementById('summary-view').classList.add('hidden');
-                initApp();
+        // 実況テキストを一文字ずつ表示する演出
+        async function typeWriterEffect(text) {
+            commentaryContent.textContent = '';
+            for (let i = 0; i < text.length; i++) {
+                if (!isRunning) return; // 完了ボタンが押されたら即中断
+                commentaryContent.textContent += text.charAt(i);
+                await sleep(30); // 1文字あたりの表示速度
             }
         }
 
-        function renderSummary() {
-            const container = document.getElementById('summary-container');
-            container.innerHTML = '';
-            
-            ['OUT', 'IN'].forEach(m => {
-                const data = calc(m);
-                const block = document.createElement('div');
-                block.className = "flex flex-col mb-8";
-                block.innerHTML = `
-                    <div class="flex items-end justify-between mb-3 border-b-2 border-slate-900 pb-1.5">
-                        <h2 class="text-sm font-black tracking-tighter text-slate-900 uppercase">${m} RESULTS</h2>
-                        <span class="text-[8px] font-bold text-slate-400 uppercase">Hidden: ${config[m].hHoles.join(', ')}</span>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        ${data.map((d, i) => {
-                            let label = `${i + 1}位`;
-                            let cls = "bg-white border-slate-100";
-                            if (i === 0) { label = "優勝"; cls = "summary-winner"; }
-                            else if (i === 1) { label = "準優勝"; cls = "summary-runnerup"; }
-                            else if (i === data.length - 1) { label = "ラス 💀"; cls = "summary-last"; }
-                            
-                            return `
-                                <div class="flex items-center justify-between p-1.5 px-3 rounded border text-[10px] ${cls}">
-                                    <span class="w-10 font-black opacity-60 uppercase">${label}</span>
-                                    <span class="flex-1 font-bold truncate mx-3 item-text uppercase tracking-tight">${d.name}</span>
-                                    <span class="font-black text-xs text-right item-text">${d.net.toFixed(1)}</span>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                `;
-                container.appendChild(block);
-            });
+        async function startRaceLoop() {
+            while (isRunning) {
+                // フェーズを順に実行
+                for (let i = 0; i < phases.length; i++) {
+                    if (!isRunning) break;
+                    
+                    const phase = phases[i];
+                    
+                    // 馬を移動させる
+                    updateHorses(phase.progress, phase.duration);
+                    
+                    // 実況テキストを更新
+                    // awaitを付けずに非同期で実行し、指定時間(duration)待つ間にタイピング演出が終わるようにする
+                    typeWriterEffect(phase.text);
+                    
+                    // 次のフェーズまでの待機時間
+                    let elapsed = 0;
+                    const checkInterval = 100;
+                    while(elapsed < phase.duration) {
+                        if (!isRunning) return; // 待機中も終了フラグを監視
+                        await sleep(checkInterval);
+                        elapsed += checkInterval;
+                    }
+                }
+
+                if (!isRunning) break;
+
+                // ループ完了時（もう一周だぁぁぁ！の後）
+                await sleep(500); // 画面外に走り抜けるのを少し待つ
+                
+                // 位置をリセット（アニメーションなし）
+                updateHorses(0, 0);
+                
+                // リセットがブラウザに反映されるのを待つため1フレーム待機
+                await sleep(50);
+            }
         }
 
-        window.onload = initApp;
+        // ページ読み込み完了時にループ開始
+        window.onload = () => {
+            startRaceLoop();
+        };
     </script>
 </body>
 </html>
 
+
+```
