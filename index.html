@@ -115,13 +115,11 @@
         <div class="modal-content">
             <h2>アプリの使い方</h2>
             <p>本アプリは、ゴルフにおける「オリンピック」のスコアおよび純利益を自動計算するツールです。</p>
-            <p>【基本ルール】<br>グリーン上でのパット距離に応じて、以下のポイントが加算されます。プレイ人数に応じて対象となる役の数は自動で変動します。</p>
+            <p>【基本ルール】<br>グリーン上でのパット距離に応じてポイントが加算されます。設定したプレイ人数に連動し、配点と役の数は自動的に調整されます。</p>
             <ul>
-                <li><b>ダイヤ(5pt):</b> グリーン外からの直接カップイン</li>
-                <li><b>金(4pt):</b> 一番遠い距離からの1パット</li>
-                <li><b>銀(3pt):</b> 二番目に遠い距離からの1パット</li>
-                <li><b>銅(2pt):</b> 三番目に遠い距離からの1パット</li>
-                <li><b>鉄(1pt):</b> 一番近い距離からの1パット</li>
+                <li><b>ダイヤ:</b> グリーン外からの直接カップイン（プレイ人数＋1 pt）</li>
+                <li><b>金:</b> 1番遠い距離からの1パット（プレイ人数と同じ pt）</li>
+                <li><b>銀・銅・鉄:</b> 距離が近接するごとに1ptずつ減少（人数に応じて下位の役は除外）</li>
             </ul>
             <p style="font-size: 0.85rem; color: #666;">※純利益は、参加者全員との相殺計算（ゼロサム方式）によって自動的に算出されます。</p>
             <button class="close-btn" onclick="closeModal()">プレイ開始</button>
@@ -179,6 +177,7 @@
             document.getElementById('rule-modal').style.display = 'none';
         }
 
+        // プレイヤー状態の初期化
         let players = [
             { id: 1, name: "Player 1", points: 0 },
             { id: 2, name: "Player 2", points: 0 },
@@ -186,20 +185,31 @@
             { id: 4, name: "Player 4", points: 0 }
         ];
 
-        const allMedals = [
-            { name: "ダイヤ", val: 5, cls: "btn-diamond", emoji: "💎" }, // 常に有効
-            { name: "金", val: 4, cls: "btn-gold", emoji: "🥇" },       // 1番遠い
-            { name: "銀", val: 3, cls: "btn-silver", emoji: "🥈" },     // 2番目
-            { name: "銅", val: 2, cls: "btn-bronze", emoji: "🥉" },     // 3番目
-            { name: "鉄", val: 1, cls: "btn-iron", emoji: "⚙️" }        // 4番目
-        ];
-
+        // 人数に応じた役とポイントを動的に生成
         function getActiveMedals() {
             const count = parseInt(document.getElementById('player-count').value);
-            // ダイヤ(1つ) + プレイ人数分の役を取得
-            return allMedals.slice(0, count + 1);
+            const medals = [];
+            
+            // ダイヤは常に (プレイ人数 + 1) のポイント
+            medals.push({ name: "ダイヤ", val: count + 1, cls: "btn-diamond", emoji: "💎" });
+            
+            const medalNames = ["金", "銀", "銅", "鉄"];
+            const medalEmojis = ["🥇", "🥈", "🥉", "⚙️"];
+            const medalClasses = ["btn-gold", "btn-silver", "btn-bronze", "btn-iron"];
+
+            // プレイ人数に応じて金から順にポイントを付与（スライドモデル）
+            for (let i = 0; i < count; i++) {
+                medals.push({
+                    name: medalNames[i],
+                    val: count - i,
+                    cls: medalClasses[i],
+                    emoji: medalEmojis[i]
+                });
+            }
+            return medals;
         }
 
+        // ヘッダーの常時ルール表示を更新
         function updateStickyRules() {
             const activeMedals = getActiveMedals();
             const container = document.getElementById('sticky-rules');
@@ -208,10 +218,11 @@
             ).join('');
         }
 
+        // プレイ人数の変更検知とデータ構造の再編成
         function changePlayerCount() {
             const count = parseInt(document.getElementById('player-count').value);
             
-            // プレイヤー配列の調整
+            // プレイヤー配列長の調整
             while(players.length < count) {
                 players.push({ id: players.length + 1, name: "Player " + (players.length + 1), points: 0 });
             }
@@ -223,6 +234,7 @@
             renderPlayers();
         }
 
+        // プレイヤーカードのDOM描画
         function renderPlayers() {
             const container = document.getElementById('players-container');
             container.innerHTML = '';
@@ -253,17 +265,20 @@
             updateScoreboard();
         }
 
+        // ポイント加算処理
         function addPoint(playerIndex, value) {
             players[playerIndex].points += value;
             if (players[playerIndex].points < 0) players[playerIndex].points = 0;
             renderPlayers();
         }
 
+        // プレイヤー名のインライン編集反映
         function updateName(playerIndex, newName) {
             players[playerIndex].name = newName;
             updateScoreboard();
         }
 
+        // スコアボード（純利益相殺モデル）の計算と再描画
         function updateScoreboard() {
             const rate = parseInt(document.getElementById('rate').value);
             const tbody = document.getElementById('scoreboard-body');
@@ -299,7 +314,7 @@
             });
         }
 
-        // 初期化実行
+        // 初期化プロセスの実行
         updateStickyRules();
         renderPlayers();
     </script>
