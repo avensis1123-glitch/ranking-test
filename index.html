@@ -2,239 +2,264 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>スコア集計中...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>オリンピック集計アプリ</title>
     <style>
         :root {
-            --turf-color: #2d6a4f;
-            --dirt-color: #9c6644;
-            --text-main: #1b4332;
+            --primary: #ff4757;
+            --secondary: #1e90ff;
+            --success: #2ed573;
+            --danger: #ff6b81;
+            --text-dark: #2f3542;
+            --text-light: #ffffff;
+            --card-bg: rgba(255, 255, 255, 0.95);
         }
 
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-            background-color: #f0fdf4;
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            overflow-x: hidden;
+        body { 
+            font-family: 'Helvetica Neue', Arial, sans-serif; 
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); 
+            color: var(--text-dark); 
+            margin: 0; 
+            padding: 0; 
+            padding-bottom: 50px;
+            min-height: 100vh; 
         }
 
-        .header {
-            width: 100%;
-            background-color: var(--text-main);
-            color: white;
-            text-align: center;
-            padding: 1rem 0;
-            font-size: 1.5rem;
-            font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            z-index: 10;
+        /* 初期ルールモーダル */
+        #rule-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #fff; padding: 25px; border-radius: 12px;
+            width: 85%; max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .modal-content h2 { margin-top: 0; color: var(--primary); text-align: center; }
+        .modal-content ul { padding-left: 20px; line-height: 1.6; }
+        .close-btn {
+            display: block; width: 100%; padding: 12px;
+            background: var(--primary); color: #fff; font-size: 1.1rem;
+            font-weight: bold; text-align: center; border: none; border-radius: 8px;
+            margin-top: 20px; cursor: pointer;
         }
 
-        .race-container {
-            width: 95%;
-            max-width: 800px;
-            margin: 2rem auto;
-            background-color: var(--turf-color);
-            border-radius: 12px;
-            padding: 1rem 0;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.3), 0 10px 15px -3px rgba(0,0,0,0.1);
-            position: relative;
-            overflow: hidden;
+        /* 常時表示ルールヘッダー */
+        .sticky-rules {
+            position: sticky; top: 0; background: var(--secondary); color: var(--text-light);
+            padding: 10px; text-align: center; font-size: 0.9rem; font-weight: bold;
+            z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex; justify-content: space-around; flex-wrap: wrap; gap: 5px;
         }
+        .sticky-rules span { background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px; }
 
-        .track-line {
-            height: 60px;
-            background-color: var(--dirt-color);
-            margin: 10px 0;
-            position: relative;
-            border-top: 2px dashed rgba(255,255,255,0.3);
-            border-bottom: 2px dashed rgba(255,255,255,0.3);
-        }
+        .container { padding: 15px; max-width: 600px; margin: 0 auto; }
 
-        .horse {
-            font-size: 40px;
-            position: absolute;
-            left: -50px;
-            top: 5px;
-            transition: left 1s linear;
-            /* scaleX(-1)で反転させるため、影のX方向を逆に調整 */
-            filter: drop-shadow(-2px 4px 2px rgba(0,0,0,0.4));
-            transform: scaleX(-1);
-            display: inline-block;
+        .config-panel {
+            background: var(--card-bg); padding: 15px; border-radius: 12px;
+            margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center; font-weight: bold; border: 2px solid #fff;
         }
+        select { font-size: 1.2rem; padding: 5px 10px; border-radius: 6px; border: 1px solid #ccc; font-weight: bold;}
 
-        /* 走っているように見せる上下のバウンドアニメーション（右向き反転を維持） */
-        @keyframes gallop {
-            0%, 100% { transform: scaleX(-1) translateY(0) rotate(0deg); }
-            25% { transform: scaleX(-1) translateY(-5px) rotate(5deg); }
-            50% { transform: scaleX(-1) translateY(0) rotate(0deg); }
-            75% { transform: scaleX(-1) translateY(2px) rotate(-5deg); }
+        /* プレイヤーカード */
+        .player-card {
+            background: var(--card-bg); padding: 15px; border-radius: 12px;
+            margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-left: 6px solid var(--secondary);
         }
-
-        .galloping {
-            animation: gallop 0.4s infinite;
+        .player-header {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 1.2rem; font-weight: bold; margin-bottom: 15px;
         }
+        .player-name { border-bottom: 1px dashed #ccc; outline: none; }
         
-        .horse:nth-child(2) { animation-duration: 0.35s; }
-        .horse:nth-child(3) { animation-duration: 0.45s; }
-
-        .commentary-box {
-            width: 95%;
-            max-width: 800px;
-            background-color: white;
-            border: 4px solid var(--turf-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            position: relative;
+        .btn-group { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+        button {
+            padding: 12px 0; font-size: 0.9rem; font-weight: bold;
+            border: none; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.1s;
         }
+        button:active { transform: scale(0.95); }
+        .btn-diamond { background: linear-gradient(135deg, #e0f7fa, #80deea); color: #006064; }
+        .btn-gold { background: linear-gradient(135deg, #fff8e1, #ffd54f); color: #b28900; }
+        .btn-silver { background: linear-gradient(135deg, #f5f5f5, #bdbdbd); color: #424242; }
+        .btn-bronze { background: linear-gradient(135deg, #efebe9, #bcaaa4); color: #4e342e; }
+        .btn-iron { background: linear-gradient(135deg, #616161, #212121); color: #ffffff; }
+        .btn-minus { background: #f1f2f6; color: var(--text-dark); grid-column: span 5; margin-top: 5px; border: 1px solid #ccc;}
 
-        .commentary-title {
-            position: absolute;
-            top: -15px;
-            left: 20px;
-            background-color: #dc2626;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            letter-spacing: 2px;
+        /* スコアボード */
+        .scoreboard-container {
+            background: var(--card-bg); border-radius: 12px; padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: 25px; overflow-x: auto;
         }
-
-        .commentary-text {
-            font-size: 1.25rem;
-            line-height: 1.6;
-            font-weight: bold;
-            min-height: 3em;
-            display: flex;
-            align-items: center;
-        }
-
-        .blinking-cursor {
-            display: inline-block;
-            width: 10px;
-            height: 1.2em;
-            background-color: var(--text-main);
-            margin-left: 5px;
-            vertical-align: middle;
-            animation: blink 1s step-end infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
+        .scoreboard { width: 100%; border-collapse: collapse; min-width: 300px; }
+        .scoreboard th, .scoreboard td { border-bottom: 1px solid #eee; padding: 10px; text-align: center; font-size: 0.95rem; }
+        .scoreboard th { background: #f8f9fa; font-weight: bold; color: #555; }
+        .val-plus { color: var(--success); font-weight: bold; }
+        .val-minus { color: var(--danger); font-weight: bold; }
+        .val-net { font-size: 1.1rem; font-weight: bold; }
+        .net-positive { color: #0984e3; }
+        .net-negative { color: #d63031; }
     </style>
 </head>
 <body>
 
-    <div class="header">⛳ スコア集計中...</div>
-
-    <div class="race-container">
-        <div class="track-line"><div class="horse galloping" id="horse1">🏇</div></div>
-        <div class="track-line"><div class="horse galloping" id="horse2">🏇</div></div>
-        <div class="track-line"><div class="horse galloping" id="horse3">🏇</div></div>
+    <!-- 初回ルール解説モーダル -->
+    <div id="rule-modal">
+        <div class="modal-content">
+            <h2>オリンピック ルール</h2>
+            <p>グリーン上でのパット距離に応じたポイント勝負であります。</p>
+            <ul>
+                <li><b>ダイヤ(5pt):</b> グリーン外からの直接カップイン</li>
+                <li><b>金(4pt):</b> 一番遠い距離からの1パット</li>
+                <li><b>銀(3pt):</b> 二番目に遠い距離からの1パット</li>
+                <li><b>銅(2pt):</b> 三番目に遠い距離からの1パット</li>
+                <li><b>鉄(1pt):</b> 一番近い距離からの1パット</li>
+            </ul>
+            <p style="font-size: 0.85rem; color: #666;">※純利益は他プレイヤー全員との相殺計算（ゼロサム）で自動算出されます。</p>
+            <button class="close-btn" onclick="closeModal()">プレイ開始</button>
+        </div>
     </div>
 
-    <div class="commentary-box">
-        <div class="commentary-title">LIVE 実況</div>
-        <div class="commentary-text">
-            <span id="commentary-content">準備中...</span><span class="blinking-cursor"></span>
+    <!-- 常時表示ヘッダー -->
+    <div class="sticky-rules">
+        <span>💎ダイヤ: 5</span>
+        <span>🥇金: 4</span>
+        <span>🥈銀: 3</span>
+        <span>🥉銅: 2</span>
+        <span>⚙️鉄: 1</span>
+    </div>
+
+    <div class="container">
+        <div class="config-panel">
+            <label for="rate">レート（1pt単価）: </label>
+            <select id="rate" onchange="updateScoreboard()">
+                <script>
+                    for(let i = 50; i <= 500; i += 50) {
+                        document.write(`<option value="${i}" ${i===100 ? 'selected' : ''}>${i}</option>`);
+                    }
+                </script>
+            </select>
+        </div>
+
+        <div id="players-container"></div>
+
+        <div class="scoreboard-container">
+            <h3 style="margin-top:0; text-align:center; color: var(--text-dark);">最終清算表（純利益）</h3>
+            <table class="scoreboard">
+                <thead>
+                    <tr>
+                        <th>名前</th>
+                        <th>獲得Pt</th>
+                        <th>受取(＋)</th>
+                        <th>支払(－)</th>
+                        <th>純利益</th>
+                    </tr>
+                </thead>
+                <tbody id="scoreboard-body"></tbody>
+            </table>
         </div>
     </div>
 
     <script>
-        // 実況フェーズの定義
-        const phases = [
-            { text: "各プレイヤー、一斉にスタート！ただいまスコアカードを猛烈な勢いで回収中！", progress: 15, duration: 4000 },
-            { text: "第1コーナーを回る！バーディ、ボギーが入り乱れる大混戦！計算機が唸りを上げております！", progress: 35, duration: 4000 },
-            { text: "第3コーナーから第4コーナーへ！ペリア方式の隠しホールが牙を剥く！ハンデ調整で順位がわからなくなってきた！", progress: 55, duration: 5000 },
-            { text: "さあ、最後の直線に入った！幹事の指先がキーボードの上を激しく舞う！", progress: 75, duration: 4000 },
-            { text: "残り200メートル！集計完了まであとわずか！トップ集団のスコアが並んでいる！", progress: 85, duration: 4000 },
-            { text: "残り100！あともう少し！最終確認中！...おっと、まだ計算が合わない！スコアカードの字が汚くて読めないぞぉぉぉ！もう一周だぁぁぁ！", progress: 110, duration: 5000 }
+        function closeModal() {
+            document.getElementById('rule-modal').style.display = 'none';
+        }
+
+        const players = [
+            { id: 1, name: "Player 1", points: 0 },
+            { id: 2, name: "Player 2", points: 0 },
+            { id: 3, name: "Player 3", points: 0 },
+            { id: 4, name: "Player 4", points: 0 }
         ];
 
-        const horses = [
-            document.getElementById('horse1'),
-            document.getElementById('horse2'),
-            document.getElementById('horse3')
+        const medals = [
+            { name: "ダ", val: 5, cls: "btn-diamond" },
+            { name: "金", val: 4, cls: "btn-gold" },
+            { name: "銀", val: 3, cls: "btn-silver" },
+            { name: "銅", val: 2, cls: "btn-bronze" },
+            { name: "鉄", val: 1, cls: "btn-iron" }
         ];
-        const commentaryContent = document.getElementById('commentary-content');
-        
-        let isRunning = true;
 
-        // 指定ミリ秒待機するユーティリティ
-        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        function renderPlayers() {
+            const container = document.getElementById('players-container');
+            container.innerHTML = '';
 
-        // 馬の位置を更新する関数
-        function updateHorses(progress, transitionTime) {
-            horses.forEach((horse) => {
-                horse.style.transition = `left ${transitionTime}ms linear`;
+            players.forEach((p, index) => {
+                const card = document.createElement('div');
+                card.className = 'player-card';
                 
-                if (progress >= 110) {
-                    const randomOffset = Math.random() * 20;
-                    horse.style.left = `calc(${progress + randomOffset}% + 50px)`;
-                } else if (progress === 0) {
-                    horse.style.transition = 'none';
-                    horse.style.left = '-50px';
-                } else {
-                    const randomFluctuation = (Math.random() * 10) - 5;
-                    let targetPos = progress + randomFluctuation;
-                    targetPos = Math.max(5, Math.min(targetPos, 90));
-                    horse.style.left = `calc(${targetPos}% - 30px)`;
-                }
+                let buttonsHtml = medals.map(m => 
+                    `<button class="${m.cls}" onclick="addPoint(${index}, ${m.val})">${m.name}<br>+${m.val}</button>`
+                ).join('');
+
+                card.innerHTML = `
+                    <div class="player-header">
+                        <span class="player-name" contenteditable="true" onblur="updateName(${index}, this.innerText)">${p.name}</span>
+                        <span style="color: var(--primary); font-size: 1.4rem;">${p.points} <span style="font-size:0.9rem; color:#888;">pt</span></span>
+                    </div>
+                    <div class="btn-group">
+                        ${buttonsHtml}
+                        <button class="btn-minus" onclick="addPoint(${index}, -1)">誤入力取消 (-1 pt)</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            updateScoreboard();
+        }
+
+        function addPoint(playerIndex, value) {
+            players[playerIndex].points += value;
+            if (players[playerIndex].points < 0) players[playerIndex].points = 0;
+            renderPlayers();
+        }
+
+        function updateName(playerIndex, newName) {
+            players[playerIndex].name = newName;
+            updateScoreboard();
+        }
+
+        function updateScoreboard() {
+            const rate = parseInt(document.getElementById('rate').value);
+            const tbody = document.getElementById('scoreboard-body');
+            tbody.innerHTML = '';
+
+            // 全プレイヤーの総獲得ポイント
+            const totalPoints = players.reduce((sum, p) => sum + p.points, 0);
+
+            players.forEach(p => {
+                const row = document.createElement('tr');
+                
+                // 相殺ロジックの計算
+                // 獲得：自分のポイント×3人から徴収
+                const earnedPts = p.points * 3;
+                const earnedMoney = earnedPts * rate;
+                
+                // 支払：(総ポイント - 自分のポイント) を他の人に支払う
+                const paidPts = totalPoints - p.points;
+                const paidMoney = paidPts * rate;
+                
+                // 純利益
+                const netMoney = earnedMoney - paidMoney;
+
+                const netClass = netMoney > 0 ? 'net-positive' : (netMoney < 0 ? 'net-negative' : '');
+                const netSign = netMoney > 0 ? '+' : '';
+
+                row.innerHTML = `
+                    <td style="font-weight:bold;">${p.name}</td>
+                    <td>${p.points}</td>
+                    <td class="val-plus">+${earnedMoney}</td>
+                    <td class="val-minus">-${paidMoney}</td>
+                    <td class="val-net ${netClass}">${netSign}${netMoney}</td>
+                `;
+                tbody.appendChild(row);
             });
         }
 
-        // 実況テキストを一文字ずつ表示する演出
-        async function typeWriterEffect(text) {
-            commentaryContent.textContent = '';
-            for (let i = 0; i < text.length; i++) {
-                if (!isRunning) return;
-                commentaryContent.textContent += text.charAt(i);
-                await sleep(30);
-            }
-        }
-
-        async function startRaceLoop() {
-            while (isRunning) {
-                for (let i = 0; i < phases.length; i++) {
-                    if (!isRunning) break;
-                    
-                    const phase = phases[i];
-                    updateHorses(phase.progress, phase.duration);
-                    typeWriterEffect(phase.text);
-                    
-                    let elapsed = 0;
-                    const checkInterval = 100;
-                    while(elapsed < phase.duration) {
-                        if (!isRunning) return;
-                        await sleep(checkInterval);
-                        elapsed += checkInterval;
-                    }
-                }
-
-                if (!isRunning) break;
-                await sleep(500); 
-                updateHorses(0, 0);
-                await sleep(50);
-            }
-        }
-
-        window.onload = () => {
-            startRaceLoop();
-        };
+        renderPlayers();
     </script>
 </body>
 </html>
-
-
-
