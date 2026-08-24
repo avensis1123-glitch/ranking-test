@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>オリンピック集計アプリ</title>
-    <!-- 画像保存用ライブラリ html2canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
@@ -21,49 +20,59 @@
         body { 
             font-family: 'Helvetica Neue', Arial, sans-serif; 
             background: var(--bg-grad); color: var(--dark); 
-            margin: 0; padding: 0; min-height: 100vh;
+            margin: 0; padding: 0; 
+            height: 100vh; overflow: hidden; /* スクロール禁止を強制 */
             display: flex; flex-direction: column;
         }
 
         /* ビュー管理 */
-        .view { display: none; padding: 10px; width: 100%; max-width: 500px; margin: 0 auto; flex: 1; }
-        .view.active { display: flex; flex-direction: column; }
+        .view { display: none; padding: 5px; width: 100%; max-width: 500px; margin: 0 auto; height: 100%; flex-direction: column; }
+        .view.active { display: flex; }
 
-        .card { background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        h1, h2 { margin: 0 0 10px 0; text-align: center; color: var(--primary); font-size: 1.2rem; }
+        .card { background: rgba(255, 255, 255, 0.95); border-radius: 8px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 5px; display: flex; flex-direction: column; flex: 1; }
+        h1, h2 { margin: 0 0 5px 0; text-align: center; color: var(--primary); font-size: 1.1rem; }
         
         /* 設定画面 */
-        .rule-box { border-left: 4px solid var(--primary); background: #fff0f0; padding: 10px; font-size: 0.85rem; margin-bottom: 15px; }
-        .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; }
-        select, input { padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 1rem; width: 100%; }
-        .name-inputs { display: grid; gap: 8px; margin-bottom: 15px; }
+        .rule-box { border-left: 4px solid var(--primary); background: #fff0f0; padding: 8px; font-size: 0.8rem; margin-bottom: 10px; }
+        .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; font-size: 0.9rem;}
+        select, input { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.9rem; width: 100%; }
+        .name-inputs { display: grid; gap: 5px; margin-bottom: 10px; }
         
-        .btn { width: 100%; padding: 12px; font-size: 1.1rem; font-weight: bold; color: #fff; background: var(--secondary); border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        .btn-submit { background: var(--primary); margin-top: auto; }
-        .btn-save { background: var(--success); margin-top: 15px; }
+        .btn { width: 100%; padding: 10px; font-size: 1rem; font-weight: bold; color: #fff; background: var(--secondary); border: none; border-radius: 6px; cursor: pointer; }
+        .btn-submit { background: var(--primary); margin-top: auto; padding: 12px; font-size: 1.1rem;}
+        .btn-save { background: var(--success); margin-top: 10px; }
 
-        /* プレイ画面 (コンパクト化) */
-        .play-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; border-bottom: 2px solid var(--secondary); padding-bottom: 5px; }
-        .player-row { margin-bottom: 12px; border-bottom: 1px dashed #ccc; padding-bottom: 8px; }
-        .player-name { font-weight: bold; margin-bottom: 5px; display: block; }
-        .medal-grid { display: flex; gap: 4px; }
+        /* プレイ画面 (高密度化) */
+        .play-header { display: flex; justify-content: space-between; align-items: baseline; font-weight: bold; font-size: 1rem; border-bottom: 2px solid var(--secondary); padding-bottom: 2px; margin-bottom: 5px; }
+        .play-info-bar { display: flex; justify-content: space-between; font-size: 0.75rem; background: #eee; padding: 4px; border-radius: 4px; margin-bottom: 5px; font-weight: bold; color: #555;}
+        
+        /* 役の常時ルール表示帯 */
+        .rule-banner { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; font-size: 0.7rem; background: #fff3cd; color: #856404; padding: 4px; border-radius: 4px; margin-bottom: 5px; font-weight: bold; border: 1px solid #ffeeba;}
+        
+        /* プレイヤーごとの入力UI */
+        .player-row { margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed #ccc; }
+        .player-name { font-weight: bold; font-size: 0.9rem; margin-bottom: 2px; display: block; color: var(--primary); }
+        .medal-grid { display: flex; gap: 2px; }
+        
         .medal-btn { 
-            flex: 1; padding: 8px 2px; font-size: 0.8rem; font-weight: bold; border: 1px solid #ccc; 
-            border-radius: 6px; background: #f1f2f6; cursor: pointer; text-align: center; 
+            flex: 1; padding: 4px 1px; font-size: 0.7rem; font-weight: bold; border: 1px solid #ccc; 
+            border-radius: 4px; background: #f1f2f6; cursor: pointer; text-align: center; line-height: 1.2;
         }
         .medal-btn.selected { border-color: var(--primary); background: #ffeaa7; color: #d35400; box-shadow: inset 0 0 0 2px var(--primary); }
         
-        /* ミニスコアボード */
-        .mini-board { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 15px; }
-        .mini-board th, .mini-board td { border: 1px solid #ddd; padding: 4px; text-align: center; }
+        /* ミニスコアボード (極小化) */
+        .mini-board { width: 100%; border-collapse: collapse; font-size: 0.7rem; margin-bottom: 5px; }
+        .mini-board th, .mini-board td { border: 1px solid #ddd; padding: 2px; text-align: center; }
         .mini-board th { background: #f8f9fa; }
         .net-plus { color: #0984e3; font-weight: bold; }
         .net-minus { color: #d63031; font-weight: bold; }
 
-        /* 結果画面 */
-        #capture-area { background: var(--bg-grad); padding: 10px; border-radius: 8px; }
-        .detail-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; background: #fff; margin-bottom: 15px; }
-        .detail-table th, .detail-table td { border: 1px solid #ccc; padding: 4px; text-align: center; }
+        /* 結果画面 (スクロール許可) */
+        #result-view { overflow-y: auto; display: none; }
+        #result-view.active { display: block; }
+        #capture-area { background: var(--bg-grad); padding: 5px; }
+        .detail-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; background: #fff; margin-bottom: 10px; }
+        .detail-table th, .detail-table td { border: 1px solid #ccc; padding: 2px; text-align: center; }
         .detail-table th { background: #eee; }
     </style>
 </head>
@@ -75,12 +84,12 @@
             <h1>オリンピック集計</h1>
             <div class="rule-box">
                 <b>【絶対条件】</b><br>
-                グリーン上から<b>「1パット」でカップイン</b>した場合のみポイントが発生します。（ダイヤのみグリーン外からの直接カップイン）
+                グリーン上から<b>「1パット」でカップイン</b>した場合のみ対象。（※ダイヤのみグリーン外から）
             </div>
             
             <div class="config-row">
                 <label>プレイ人数</label>
-                <select id="player-count" style="width:50%;" onchange="renderNameInputs()">
+                <select id="player-count" style="width:45%;" onchange="renderNameInputs()">
                     <option value="4" selected>4人</option>
                     <option value="3">3人</option>
                     <option value="2">2人</option>
@@ -88,7 +97,7 @@
             </div>
             <div class="config-row">
                 <label>レート (1pt)</label>
-                <select id="rate" style="width:50%;">
+                <select id="rate" style="width:45%;">
                     <script>
                         for(let i = 50; i <= 500; i += 50) document.write(`<option value="${i}" ${i===100?'selected':''}>${i}</option>`);
                     </script>
@@ -96,20 +105,27 @@
             </div>
 
             <div class="name-inputs" id="name-inputs-container"></div>
-            <button class="btn" onclick="startGame()">ゲーム開始</button>
+            <button class="btn btn-submit" onclick="startGame()">ゲーム開始</button>
         </div>
     </div>
 
-    <!-- 2. プレイ画面 (1画面完結) -->
+    <!-- 2. プレイ画面 (No-Scroll 完全1画面完結) -->
     <div id="play-view" class="view">
-        <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+        <div class="card">
             <div class="play-header">
-                <span id="hole-indicator">Hole 1 / 18</span>
-                <span style="font-size:0.8rem; color:#666;">※1パットのみ</span>
+                <span id="hole-indicator" style="font-size: 1.2rem; color: var(--primary);">Hole 1 / 18</span>
+                <span id="rate-display">レート: 100</span>
+            </div>
+            
+            <!-- 常時ルール表示帯 -->
+            <div id="rule-banner" class="rule-banner"></div>
+
+            <div class="play-info-bar">
+                <span>各プレイヤーの役を選択（該当なしは「なし」）</span>
             </div>
             
             <!-- 入力UI -->
-            <div id="input-container" style="margin-bottom: 15px;"></div>
+            <div id="input-container" style="flex: 1; display: flex; flex-direction: column; justify-content: center;"></div>
 
             <!-- 暫定純利益 -->
             <table class="mini-board">
@@ -129,7 +145,6 @@
             <div class="card" style="margin-bottom: 0;">
                 <h2>最終集計結果</h2>
                 
-                <!-- 18ホール詳細 -->
                 <div style="overflow-x: auto;">
                     <table class="detail-table">
                         <thead id="detail-head"></thead>
@@ -137,7 +152,6 @@
                     </table>
                 </div>
 
-                <!-- 最終清算 -->
                 <table class="mini-board">
                     <thead>
                         <tr><th>名前</th><th>獲得Pt</th><th>純利益</th></tr>
@@ -150,16 +164,12 @@
     </div>
 
     <script>
-        // 状態管理
         let players = [];
         let rate = 100;
         let currentHole = 1;
         const TOTAL_HOLES = 18;
         let activeMedals = [];
-        
-        // 履歴データ: history[holeIndex][playerIndex] = 獲得ポイント
         let historyData = [];
-        // 現在のホールの入力状態
         let currentHoleSelection = [];
 
         function renderNameInputs() {
@@ -174,13 +184,13 @@
         // 動的配点ロジック（スライド方式）
         function generateMedals(count) {
             const medals = [];
-            medals.push({ name: "ダ", val: count + 1, emoji: "💎" });
+            medals.push({ name: "ダイヤ", short: "ダ", val: count + 1, emoji: "💎" });
             const names = ["金", "銀", "銅", "鉄"];
             const emojis = ["🥇", "🥈", "🥉", "⚙️"];
             for (let i = 0; i < count; i++) {
-                medals.push({ name: names[i], val: count - i, emoji: emojis[i] });
+                medals.push({ name: names[i], short: names[i], val: count - i, emoji: emojis[i] });
             }
-            medals.push({ name: "なし", val: 0, emoji: "❌" }); // 0点オプション追加
+            medals.push({ name: "なし", short: "なし", val: 0, emoji: "❌" });
             return medals;
         }
 
@@ -194,7 +204,7 @@
             for(let i=0; i<count; i++) {
                 const name = document.getElementById(`pname-${i}`).value || `Player ${i+1}`;
                 players.push({ index: i, name: name, totalPts: 0 });
-                currentHoleSelection.push(0); // 初期値は全員0点
+                currentHoleSelection.push(0);
             }
             
             historyData = [];
@@ -206,15 +216,24 @@
 
         function renderPlayScreen() {
             document.getElementById('hole-indicator').innerText = `Hole ${currentHole} / ${TOTAL_HOLES}`;
+            document.getElementById('rate-display').innerText = `レート: ${rate}`;
+            
+            // ルール帯のレンダリング
+            document.getElementById('rule-banner').innerHTML = activeMedals.filter(m => m.val > 0).map(m => 
+                `<span>${m.emoji}${m.short}:${m.val}</span>`
+            ).join(' | ');
+
             const container = document.getElementById('input-container');
             container.innerHTML = '';
 
             players.forEach((p, pIndex) => {
                 let btns = activeMedals.map(m => {
                     const isSelected = currentHoleSelection[pIndex] === m.val;
+                    // 文字での役名表示を追加
+                    const label = m.val > 0 ? `${m.short}(${m.val})` : `0pt`;
                     return `<div class="medal-btn ${isSelected ? 'selected' : ''}" 
                                  onclick="selectMedal(${pIndex}, ${m.val})">
-                                ${m.emoji}<br>${m.val > 0 ? m.val : '0'}
+                                ${m.emoji} ${m.name}<br>${label}
                             </div>`;
                 }).join('');
 
@@ -234,18 +253,16 @@
         }
 
         function submitHole() {
-            // 現在の入力値を履歴に保存し、総ポイントを加算
             historyData.push([...currentHoleSelection]);
             players.forEach((p, i) => { p.totalPts += currentHoleSelection[i]; });
 
             if (currentHole >= TOTAL_HOLES) {
-                // ゲーム終了
                 switchView('result-view');
+                document.body.style.overflow = 'auto'; // 結果画面ではスクロールを許可
                 renderResultScreen();
             } else {
-                // 次のホールへ
                 currentHole++;
-                currentHoleSelection = players.map(() => 0); // リセット
+                currentHoleSelection = players.map(() => 0);
                 renderPlayScreen();
             }
         }
@@ -276,7 +293,6 @@
         }
 
         function renderResultScreen() {
-            // 詳細テーブル生成
             const thead = document.getElementById('detail-head');
             const tbody = document.getElementById('detail-body');
             
@@ -304,7 +320,6 @@
             document.getElementById(viewId).classList.add('active');
         }
 
-        // 画像として保存 (html2canvas使用)
         function saveAsImage() {
             const target = document.getElementById('capture-area');
             html2canvas(target, { scale: 2 }).then(canvas => {
@@ -315,7 +330,6 @@
             });
         }
 
-        // 初期化
         renderNameInputs();
     </script>
 </body>
