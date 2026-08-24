@@ -4,319 +4,319 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>オリンピック集計アプリ</title>
+    <!-- 画像保存用ライブラリ html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --primary: #ff4757;
             --secondary: #1e90ff;
             --success: #2ed573;
             --danger: #ff6b81;
-            --text-dark: #2f3542;
-            --text-light: #ffffff;
-            --card-bg: rgba(255, 255, 255, 0.95);
+            --dark: #2f3542;
+            --light: #ffffff;
+            --bg-grad: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
         }
 
+        * { box-sizing: border-box; }
         body { 
             font-family: 'Helvetica Neue', Arial, sans-serif; 
-            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); 
-            color: var(--text-dark); 
-            margin: 0; 
-            padding: 0; 
-            padding-bottom: 50px;
-            min-height: 100vh; 
+            background: var(--bg-grad); color: var(--dark); 
+            margin: 0; padding: 0; min-height: 100vh;
+            display: flex; flex-direction: column;
         }
 
-        /* 初期ルールモーダル */
-        #rule-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: #fff; padding: 25px; border-radius: 12px;
-            width: 85%; max-width: 400px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
-        .modal-content h2 { margin-top: 0; color: var(--primary); text-align: center; }
-        .modal-content p { font-size: 0.95rem; line-height: 1.5; }
-        .modal-content ul { padding-left: 20px; line-height: 1.6; font-size: 0.95rem; }
-        .close-btn {
-            display: block; width: 100%; padding: 12px;
-            background: var(--primary); color: #fff; font-size: 1.1rem;
-            font-weight: bold; text-align: center; border: none; border-radius: 8px;
-            margin-top: 20px; cursor: pointer;
-        }
+        /* ビュー管理 */
+        .view { display: none; padding: 10px; width: 100%; max-width: 500px; margin: 0 auto; flex: 1; }
+        .view.active { display: flex; flex-direction: column; }
 
-        /* 常時表示ルールヘッダー */
-        .sticky-rules {
-            position: sticky; top: 0; background: var(--secondary); color: var(--text-light);
-            padding: 10px; text-align: center; font-size: 0.9rem; font-weight: bold;
-            z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;
-        }
-        .sticky-rules span { background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px; }
-
-        .container { padding: 15px; max-width: 600px; margin: 0 auto; }
-
-        .config-panel {
-            background: var(--card-bg); padding: 15px; border-radius: 12px;
-            margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-around;
-            align-items: center; border: 2px solid #fff; font-weight: bold;
-        }
-        .config-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        select { font-size: 1.1rem; padding: 5px 10px; border-radius: 6px; border: 1px solid #ccc; font-weight: bold;}
-
-        /* プレイヤーカード */
-        .player-card {
-            background: var(--card-bg); padding: 15px; border-radius: 12px;
-            margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            border-left: 6px solid var(--secondary);
-        }
-        .player-header {
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 1.2rem; font-weight: bold; margin-bottom: 15px;
-        }
-        .player-name { border-bottom: 1px dashed #ccc; outline: none; }
+        .card { background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        h1, h2 { margin: 0 0 10px 0; text-align: center; color: var(--primary); font-size: 1.2rem; }
         
-        .btn-group { display: grid; gap: 5px; }
-        button {
-            padding: 12px 0; font-size: 0.9rem; font-weight: bold;
-            border: none; border-radius: 8px; cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.1s;
-        }
-        button:active { transform: scale(0.95); }
-        .btn-diamond { background: linear-gradient(135deg, #e0f7fa, #80deea); color: #006064; }
-        .btn-gold { background: linear-gradient(135deg, #fff8e1, #ffd54f); color: #b28900; }
-        .btn-silver { background: linear-gradient(135deg, #f5f5f5, #bdbdbd); color: #424242; }
-        .btn-bronze { background: linear-gradient(135deg, #efebe9, #bcaaa4); color: #4e342e; }
-        .btn-iron { background: linear-gradient(135deg, #616161, #212121); color: #ffffff; }
-        .btn-minus { background: #f1f2f6; color: var(--text-dark); grid-column: 1 / -1; margin-top: 5px; border: 1px solid #ccc;}
+        /* 設定画面 */
+        .rule-box { border-left: 4px solid var(--primary); background: #fff0f0; padding: 10px; font-size: 0.85rem; margin-bottom: 15px; }
+        .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; }
+        select, input { padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 1rem; width: 100%; }
+        .name-inputs { display: grid; gap: 8px; margin-bottom: 15px; }
+        
+        .btn { width: 100%; padding: 12px; font-size: 1.1rem; font-weight: bold; color: #fff; background: var(--secondary); border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .btn-submit { background: var(--primary); margin-top: auto; }
+        .btn-save { background: var(--success); margin-top: 15px; }
 
-        /* スコアボード */
-        .scoreboard-container {
-            background: var(--card-bg); border-radius: 12px; padding: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: 25px; overflow-x: auto;
+        /* プレイ画面 (コンパクト化) */
+        .play-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; border-bottom: 2px solid var(--secondary); padding-bottom: 5px; }
+        .player-row { margin-bottom: 12px; border-bottom: 1px dashed #ccc; padding-bottom: 8px; }
+        .player-name { font-weight: bold; margin-bottom: 5px; display: block; }
+        .medal-grid { display: flex; gap: 4px; }
+        .medal-btn { 
+            flex: 1; padding: 8px 2px; font-size: 0.8rem; font-weight: bold; border: 1px solid #ccc; 
+            border-radius: 6px; background: #f1f2f6; cursor: pointer; text-align: center; 
         }
-        .scoreboard { width: 100%; border-collapse: collapse; min-width: 300px; }
-        .scoreboard th, .scoreboard td { border-bottom: 1px solid #eee; padding: 10px; text-align: center; font-size: 0.95rem; }
-        .scoreboard th { background: #f8f9fa; font-weight: bold; color: #555; }
-        .val-plus { color: var(--success); font-weight: bold; }
-        .val-minus { color: var(--danger); font-weight: bold; }
-        .val-net { font-size: 1.1rem; font-weight: bold; }
-        .net-positive { color: #0984e3; }
-        .net-negative { color: #d63031; }
+        .medal-btn.selected { border-color: var(--primary); background: #ffeaa7; color: #d35400; box-shadow: inset 0 0 0 2px var(--primary); }
+        
+        /* ミニスコアボード */
+        .mini-board { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 15px; }
+        .mini-board th, .mini-board td { border: 1px solid #ddd; padding: 4px; text-align: center; }
+        .mini-board th { background: #f8f9fa; }
+        .net-plus { color: #0984e3; font-weight: bold; }
+        .net-minus { color: #d63031; font-weight: bold; }
+
+        /* 結果画面 */
+        #capture-area { background: var(--bg-grad); padding: 10px; border-radius: 8px; }
+        .detail-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; background: #fff; margin-bottom: 15px; }
+        .detail-table th, .detail-table td { border: 1px solid #ccc; padding: 4px; text-align: center; }
+        .detail-table th { background: #eee; }
     </style>
 </head>
 <body>
 
-    <!-- 初回ルール解説モーダル -->
-    <div id="rule-modal">
-        <div class="modal-content">
-            <h2>アプリの使い方</h2>
-            <p>本アプリは、ゴルフにおける「オリンピック」のスコアおよび純利益を自動計算するツールです。</p>
-            <p>【基本ルール】<br>グリーン上でのパット距離に応じてポイントが加算されます。設定したプレイ人数に連動し、配点と役の数は自動的に調整されます。</p>
-            <ul>
-                <li><b>ダイヤ:</b> グリーン外からの直接カップイン（プレイ人数＋1 pt）</li>
-                <li><b>金:</b> 1番遠い距離からの1パット（プレイ人数と同じ pt）</li>
-                <li><b>銀・銅・鉄:</b> 距離が近接するごとに1ptずつ減少（人数に応じて下位の役は除外）</li>
-            </ul>
-            <p style="font-size: 0.85rem; color: #666;">※純利益は、参加者全員との相殺計算（ゼロサム方式）によって自動的に算出されます。</p>
-            <button class="close-btn" onclick="closeModal()">プレイ開始</button>
-        </div>
-    </div>
-
-    <!-- 常時表示ヘッダー -->
-    <div class="sticky-rules" id="sticky-rules">
-        <!-- JSで動的に生成 -->
-    </div>
-
-    <div class="container">
-        <div class="config-panel">
-            <div class="config-item">
-                <label for="player-count">プレイ人数</label>
-                <select id="player-count" onchange="changePlayerCount()">
+    <!-- 1. 設定画面 -->
+    <div id="setup-view" class="view active">
+        <div class="card">
+            <h1>オリンピック集計</h1>
+            <div class="rule-box">
+                <b>【絶対条件】</b><br>
+                グリーン上から<b>「1パット」でカップイン</b>した場合のみポイントが発生します。（ダイヤのみグリーン外からの直接カップイン）
+            </div>
+            
+            <div class="config-row">
+                <label>プレイ人数</label>
+                <select id="player-count" style="width:50%;" onchange="renderNameInputs()">
                     <option value="4" selected>4人</option>
                     <option value="3">3人</option>
                     <option value="2">2人</option>
                 </select>
             </div>
-            <div class="config-item">
-                <label for="rate">レート (1pt)</label>
-                <select id="rate" onchange="updateScoreboard()">
+            <div class="config-row">
+                <label>レート (1pt)</label>
+                <select id="rate" style="width:50%;">
                     <script>
-                        for(let i = 50; i <= 500; i += 50) {
-                            document.write(`<option value="${i}" ${i===100 ? 'selected' : ''}>${i}</option>`);
-                        }
+                        for(let i = 50; i <= 500; i += 50) document.write(`<option value="${i}" ${i===100?'selected':''}>${i}</option>`);
                     </script>
                 </select>
             </div>
-        </div>
 
-        <div id="players-container"></div>
-
-        <div class="scoreboard-container">
-            <h3 style="margin-top:0; text-align:center; color: var(--text-dark);">最終清算表（純利益）</h3>
-            <table class="scoreboard">
-                <thead>
-                    <tr>
-                        <th>名前</th>
-                        <th>獲得Pt</th>
-                        <th>受取(＋)</th>
-                        <th>支払(－)</th>
-                        <th>純利益</th>
-                    </tr>
-                </thead>
-                <tbody id="scoreboard-body"></tbody>
-            </table>
+            <div class="name-inputs" id="name-inputs-container"></div>
+            <button class="btn" onclick="startGame()">ゲーム開始</button>
         </div>
     </div>
 
+    <!-- 2. プレイ画面 (1画面完結) -->
+    <div id="play-view" class="view">
+        <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+            <div class="play-header">
+                <span id="hole-indicator">Hole 1 / 18</span>
+                <span style="font-size:0.8rem; color:#666;">※1パットのみ</span>
+            </div>
+            
+            <!-- 入力UI -->
+            <div id="input-container" style="margin-bottom: 15px;"></div>
+
+            <!-- 暫定純利益 -->
+            <table class="mini-board">
+                <thead>
+                    <tr><th>名前</th><th>累計Pt</th><th>純利益</th></tr>
+                </thead>
+                <tbody id="mini-board-body"></tbody>
+            </table>
+
+            <button class="btn btn-submit" onclick="submitHole()">このホールを確定 (次へ)</button>
+        </div>
+    </div>
+
+    <!-- 3. 最終結果画面 -->
+    <div id="result-view" class="view">
+        <div id="capture-area">
+            <div class="card" style="margin-bottom: 0;">
+                <h2>最終集計結果</h2>
+                
+                <!-- 18ホール詳細 -->
+                <div style="overflow-x: auto;">
+                    <table class="detail-table">
+                        <thead id="detail-head"></thead>
+                        <tbody id="detail-body"></tbody>
+                    </table>
+                </div>
+
+                <!-- 最終清算 -->
+                <table class="mini-board">
+                    <thead>
+                        <tr><th>名前</th><th>獲得Pt</th><th>純利益</th></tr>
+                    </thead>
+                    <tbody id="final-board-body"></tbody>
+                </table>
+            </div>
+        </div>
+        <button class="btn btn-save" onclick="saveAsImage()">結果を画像として保存</button>
+    </div>
+
     <script>
-        function closeModal() {
-            document.getElementById('rule-modal').style.display = 'none';
+        // 状態管理
+        let players = [];
+        let rate = 100;
+        let currentHole = 1;
+        const TOTAL_HOLES = 18;
+        let activeMedals = [];
+        
+        // 履歴データ: history[holeIndex][playerIndex] = 獲得ポイント
+        let historyData = [];
+        // 現在のホールの入力状態
+        let currentHoleSelection = [];
+
+        function renderNameInputs() {
+            const count = parseInt(document.getElementById('player-count').value);
+            const container = document.getElementById('name-inputs-container');
+            container.innerHTML = '';
+            for(let i=0; i<count; i++) {
+                container.innerHTML += `<input type="text" id="pname-${i}" placeholder="プレイヤー ${i+1} の名前" value="Player ${i+1}">`;
+            }
         }
 
-        // プレイヤー状態の初期化
-        let players = [
-            { id: 1, name: "Player 1", points: 0 },
-            { id: 2, name: "Player 2", points: 0 },
-            { id: 3, name: "Player 3", points: 0 },
-            { id: 4, name: "Player 4", points: 0 }
-        ];
-
-        // 人数に応じた役とポイントを動的に生成
-        function getActiveMedals() {
-            const count = parseInt(document.getElementById('player-count').value);
+        // 動的配点ロジック（スライド方式）
+        function generateMedals(count) {
             const medals = [];
-            
-            // ダイヤは常に (プレイ人数 + 1) のポイント
-            medals.push({ name: "ダイヤ", val: count + 1, cls: "btn-diamond", emoji: "💎" });
-            
-            const medalNames = ["金", "銀", "銅", "鉄"];
-            const medalEmojis = ["🥇", "🥈", "🥉", "⚙️"];
-            const medalClasses = ["btn-gold", "btn-silver", "btn-bronze", "btn-iron"];
-
-            // プレイ人数に応じて金から順にポイントを付与（スライドモデル）
+            medals.push({ name: "ダ", val: count + 1, emoji: "💎" });
+            const names = ["金", "銀", "銅", "鉄"];
+            const emojis = ["🥇", "🥈", "🥉", "⚙️"];
             for (let i = 0; i < count; i++) {
-                medals.push({
-                    name: medalNames[i],
-                    val: count - i,
-                    cls: medalClasses[i],
-                    emoji: medalEmojis[i]
-                });
+                medals.push({ name: names[i], val: count - i, emoji: emojis[i] });
             }
+            medals.push({ name: "なし", val: 0, emoji: "❌" }); // 0点オプション追加
             return medals;
         }
 
-        // ヘッダーの常時ルール表示を更新
-        function updateStickyRules() {
-            const activeMedals = getActiveMedals();
-            const container = document.getElementById('sticky-rules');
-            container.innerHTML = activeMedals.map(m => 
-                `<span>${m.emoji}${m.name}: ${m.val}</span>`
-            ).join('');
-        }
-
-        // プレイ人数の変更検知とデータ構造の再編成
-        function changePlayerCount() {
+        function startGame() {
             const count = parseInt(document.getElementById('player-count').value);
+            rate = parseInt(document.getElementById('rate').value);
+            activeMedals = generateMedals(count);
             
-            // プレイヤー配列長の調整
-            while(players.length < count) {
-                players.push({ id: players.length + 1, name: "Player " + (players.length + 1), points: 0 });
-            }
-            while(players.length > count) {
-                players.pop();
+            players = [];
+            currentHoleSelection = [];
+            for(let i=0; i<count; i++) {
+                const name = document.getElementById(`pname-${i}`).value || `Player ${i+1}`;
+                players.push({ index: i, name: name, totalPts: 0 });
+                currentHoleSelection.push(0); // 初期値は全員0点
             }
             
-            updateStickyRules();
-            renderPlayers();
+            historyData = [];
+            currentHole = 1;
+            
+            switchView('play-view');
+            renderPlayScreen();
         }
 
-        // プレイヤーカードのDOM描画
-        function renderPlayers() {
-            const container = document.getElementById('players-container');
+        function renderPlayScreen() {
+            document.getElementById('hole-indicator').innerText = `Hole ${currentHole} / ${TOTAL_HOLES}`;
+            const container = document.getElementById('input-container');
             container.innerHTML = '';
+
+            players.forEach((p, pIndex) => {
+                let btns = activeMedals.map(m => {
+                    const isSelected = currentHoleSelection[pIndex] === m.val;
+                    return `<div class="medal-btn ${isSelected ? 'selected' : ''}" 
+                                 onclick="selectMedal(${pIndex}, ${m.val})">
+                                ${m.emoji}<br>${m.val > 0 ? m.val : '0'}
+                            </div>`;
+                }).join('');
+
+                container.innerHTML += `
+                    <div class="player-row">
+                        <span class="player-name">${p.name}</span>
+                        <div class="medal-grid">${btns}</div>
+                    </div>
+                `;
+            });
+            updateMiniBoard('mini-board-body');
+        }
+
+        function selectMedal(playerIndex, value) {
+            currentHoleSelection[playerIndex] = value;
+            renderPlayScreen();
+        }
+
+        function submitHole() {
+            // 現在の入力値を履歴に保存し、総ポイントを加算
+            historyData.push([...currentHoleSelection]);
+            players.forEach((p, i) => { p.totalPts += currentHoleSelection[i]; });
+
+            if (currentHole >= TOTAL_HOLES) {
+                // ゲーム終了
+                switchView('result-view');
+                renderResultScreen();
+            } else {
+                // 次のホールへ
+                currentHole++;
+                currentHoleSelection = players.map(() => 0); // リセット
+                renderPlayScreen();
+            }
+        }
+
+        function calculateNet(playerIndex) {
+            const count = players.length;
+            const myPts = players[playerIndex].totalPts;
+            const totalPts = players.reduce((sum, p) => sum + p.totalPts, 0);
             
-            const activeMedals = getActiveMedals();
-            const columnsCount = activeMedals.length;
-
-            players.forEach((p, index) => {
-                const card = document.createElement('div');
-                card.className = 'player-card';
-                
-                let buttonsHtml = activeMedals.map(m => 
-                    `<button class="${m.cls}" onclick="addPoint(${index}, ${m.val})">${m.name}<br>+${m.val}</button>`
-                ).join('');
-
-                card.innerHTML = `
-                    <div class="player-header">
-                        <span class="player-name" contenteditable="true" onblur="updateName(${index}, this.innerText)">${p.name}</span>
-                        <span style="color: var(--primary); font-size: 1.4rem;">${p.points} <span style="font-size:0.9rem; color:#888;">pt</span></span>
-                    </div>
-                    <div class="btn-group" style="grid-template-columns: repeat(${columnsCount}, 1fr);">
-                        ${buttonsHtml}
-                        <button class="btn-minus" onclick="addPoint(${index}, -1)">誤入力取消 (-1 pt)</button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-            updateScoreboard();
+            const earned = myPts * (count - 1) * rate;
+            const paid = (totalPts - myPts) * rate;
+            return earned - paid;
         }
 
-        // ポイント加算処理
-        function addPoint(playerIndex, value) {
-            players[playerIndex].points += value;
-            if (players[playerIndex].points < 0) players[playerIndex].points = 0;
-            renderPlayers();
-        }
-
-        // プレイヤー名のインライン編集反映
-        function updateName(playerIndex, newName) {
-            players[playerIndex].name = newName;
-            updateScoreboard();
-        }
-
-        // スコアボード（純利益相殺モデル）の計算と再描画
-        function updateScoreboard() {
-            const rate = parseInt(document.getElementById('rate').value);
-            const tbody = document.getElementById('scoreboard-body');
+        function updateMiniBoard(targetId) {
+            const tbody = document.getElementById(targetId);
             tbody.innerHTML = '';
-
-            const playerCount = players.length;
-            const totalPoints = players.reduce((sum, p) => sum + p.points, 0);
-
-            players.forEach(p => {
-                const row = document.createElement('tr');
-                
-                // 動的相殺ロジック：自分のポイント × (自分以外の人数) を徴収
-                const earnedPts = p.points * (playerCount - 1);
-                const earnedMoney = earnedPts * rate;
-                
-                // 動的相殺ロジック：(総ポイント - 自分のポイント) を他の人に支払う
-                const paidPts = totalPoints - p.points;
-                const paidMoney = paidPts * rate;
-                
-                const netMoney = earnedMoney - paidMoney;
-
-                const netClass = netMoney > 0 ? 'net-positive' : (netMoney < 0 ? 'net-negative' : '');
-                const netSign = netMoney > 0 ? '+' : '';
-
-                row.innerHTML = `
-                    <td style="font-weight:bold;">${p.name}</td>
-                    <td>${p.points}</td>
-                    <td class="val-plus">+${earnedMoney}</td>
-                    <td class="val-minus">-${paidMoney}</td>
-                    <td class="val-net ${netClass}">${netSign}${netMoney}</td>
-                `;
-                tbody.appendChild(row);
+            players.forEach((p, i) => {
+                const net = calculateNet(i);
+                const netCls = net > 0 ? 'net-plus' : (net < 0 ? 'net-minus' : '');
+                const netSign = net > 0 ? '+' : '';
+                tbody.innerHTML += `<tr>
+                    <td>${p.name}</td>
+                    <td>${p.totalPts}</td>
+                    <td class="${netCls}">${netSign}${net}</td>
+                </tr>`;
             });
         }
 
-        // 初期化プロセスの実行
-        updateStickyRules();
-        renderPlayers();
+        function renderResultScreen() {
+            // 詳細テーブル生成
+            const thead = document.getElementById('detail-head');
+            const tbody = document.getElementById('detail-body');
+            
+            let headHtml = '<tr><th>Hole</th>';
+            players.forEach(p => headHtml += `<th>${p.name}</th>`);
+            headHtml += '</tr>';
+            thead.innerHTML = headHtml;
+
+            let bodyHtml = '';
+            for(let h=0; h<TOTAL_HOLES; h++) {
+                bodyHtml += `<tr><td>${h+1}</td>`;
+                players.forEach((p, i) => {
+                    const pt = historyData[h][i];
+                    bodyHtml += `<td>${pt > 0 ? pt : '-'}</td>`;
+                });
+                bodyHtml += '</tr>';
+            }
+            tbody.innerHTML = bodyHtml;
+
+            updateMiniBoard('final-board-body');
+        }
+
+        function switchView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        // 画像として保存 (html2canvas使用)
+        function saveAsImage() {
+            const target = document.getElementById('capture-area');
+            html2canvas(target, { scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'olympic_result.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        // 初期化
+        renderNameInputs();
     </script>
 </body>
 </html>
