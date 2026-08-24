@@ -21,7 +21,7 @@
         body { 
             font-family: 'Helvetica Neue', Arial, sans-serif; 
             background: var(--bg-grad); color: var(--dark); 
-            margin: 0; padding: 4px; /* 画面端の余白を極小化 */
+            margin: 0; padding: 4px; 
             min-height: 100vh;
         }
 
@@ -46,9 +46,10 @@
         .name-inputs { display: grid; gap: 8px; margin-bottom: 15px; }
         
         /* ボタン類 */
-        .btn { width: 100%; padding: 12px; font-size: 1.05rem; font-weight: bold; color: #fff; background: var(--secondary); border: none; border-radius: 8px; cursor: pointer; display: block; margin-top: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);}
+        .btn { width: 100%; padding: 12px; font-size: 1.05rem; font-weight: bold; color: #fff; background: var(--secondary); border: none; border-radius: 8px; cursor: pointer; display: block; box-shadow: 0 2px 4px rgba(0,0,0,0.15);}
         .btn-submit { background: var(--primary); }
         .btn-save { background: var(--success); }
+        .btn-back { background: #7f8c8d; font-size: 0.9rem; padding: 12px 8px; }
 
         /* プレイ画面 (垂直圧縮設定) */
         .play-header { display: flex; justify-content: space-between; align-items: baseline; font-weight: bold; border-bottom: 2px solid var(--secondary); padding-bottom: 4px; margin-bottom: 6px; }
@@ -71,6 +72,8 @@
         .mini-board th { background: #f8f9fa; }
         .net-plus { color: #0984e3; font-weight: bold; }
         .net-minus { color: #d63031; font-weight: bold; }
+
+        .action-group { display: flex; gap: 8px; margin-top: 5px; }
 
         /* 結果画面 */
         #capture-area { background: var(--bg-grad); padding: 5px; border-radius: 8px; }
@@ -111,14 +114,14 @@
                 <label>レート (1pt)</label>
                 <select id="rate" style="width:50%;">
                     <script>
-                        for(let i = 50; i <= 500; i += 50) document.write(`<option value="${i}" ${i===100?'selected':''}>${i}円</option>`);
+                        for(let i = 100; i <= 1000; i += 100) document.write(`<option value="${i}" ${i===100?'selected':''}>${i}円</option>`);
                     </script>
                 </select>
             </div>
 
             <div class="name-inputs" id="name-inputs-container"></div>
             
-            <button class="btn btn-submit" onclick="startGame()">ゲーム開始</button>
+            <button class="btn btn-submit" onclick="startGame()" style="margin-top: 5px;">ゲーム開始</button>
         </div>
     </div>
 
@@ -142,7 +145,10 @@
                 <tbody id="mini-board-body"></tbody>
             </table>
 
-            <button class="btn btn-submit" onclick="submitHole()">このホールを確定 (次へ)</button>
+            <div class="action-group">
+                <button class="btn btn-back" id="btn-prev" onclick="prevHole()" style="flex: 1;">前ホールに戻る</button>
+                <button class="btn btn-submit" onclick="submitHole()" style="flex: 2;">このホールを確定</button>
+            </div>
         </div>
     </div>
 
@@ -224,6 +230,16 @@
             document.getElementById('hole-indicator').innerText = `Hole ${currentHole} / ${TOTAL_HOLES}`;
             document.getElementById('rate-display').innerText = `レート: ${rate}円`;
             
+            // 1ホール目の場合は戻るボタンを無効化・半透明化
+            const btnPrev = document.getElementById('btn-prev');
+            if (currentHole === 1) {
+                btnPrev.style.opacity = '0.5';
+                btnPrev.style.pointerEvents = 'none';
+            } else {
+                btnPrev.style.opacity = '1';
+                btnPrev.style.pointerEvents = 'auto';
+            }
+            
             document.getElementById('rule-banner').innerHTML = activeMedals.filter(m => m.val > 0).map(m => 
                 `<span>${m.emoji}${m.short}:${m.val}pt</span>`
             ).join(' | ');
@@ -252,6 +268,14 @@
         }
 
         function selectMedal(playerIndex, value) {
+            // 排他制御：0点以外の役を選択した際、他プレイヤーの重複を排除する
+            if (value > 0) {
+                currentHoleSelection.forEach((sel, idx) => {
+                    if (idx !== playerIndex && sel === value) {
+                        currentHoleSelection[idx] = 0; // 重複した他者の役を「なし」にリセット
+                    }
+                });
+            }
             currentHoleSelection[playerIndex] = value;
             renderPlayScreen();
         }
@@ -267,8 +291,27 @@
                 currentHole++;
                 currentHoleSelection = players.map(() => 0);
                 renderPlayScreen();
-                window.scrollTo(0, 0); // 確実なトップ位置へのリセット
+                window.scrollTo(0, 0); 
             }
+        }
+
+        function prevHole() {
+            if (currentHole <= 1) return;
+            
+            currentHole--;
+            // 履歴配列から直前のホールの選択状態を取得（配列から削除）
+            const lastSelection = historyData.pop();
+            
+            // 直前のホールで加算されたポイントをプレイヤーの累計から減算
+            players.forEach((p, i) => {
+                p.totalPts -= lastSelection[i];
+            });
+            
+            // 現在の選択状態を直前のホールの状態に復元
+            currentHoleSelection = [...lastSelection];
+            
+            renderPlayScreen();
+            window.scrollTo(0, 0);
         }
 
         function calculateNet(playerIndex) {
@@ -322,7 +365,7 @@
         function switchView(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
-            window.scrollTo(0, 0); // 画面遷移時にスクロール位置を最上部へリセット
+            window.scrollTo(0, 0); 
         }
 
         function saveAsImage() {
@@ -332,6 +375,13 @@
                 link.download = 'olympic_result.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
+                
+                // DOM描画の遅延を考慮し、処理完了後にポップアップ通知
+                setTimeout(() => {
+                    alert("正常に画像ファイルの保存が完了しました。");
+                }, 300);
+            }).catch(err => {
+                alert("画像の保存に失敗しました。ブラウザの権限設定等をご確認ください。");
             });
         }
 
