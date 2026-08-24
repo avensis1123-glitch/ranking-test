@@ -17,72 +17,64 @@
         }
 
         * { box-sizing: border-box; }
+        
         body { 
             font-family: 'Helvetica Neue', Arial, sans-serif; 
             background: var(--bg-grad); color: var(--dark); 
-            margin: 0; padding: 0; 
-            height: 100vh; /* 画面高さに固定 */
-            display: flex; flex-direction: column;
+            margin: 0; padding: 4px; /* 画面端の余白を極小化 */
+            min-height: 100vh;
         }
 
-        /* ビュー管理（各ビューごとにスクロールを許可） */
-        .view { 
-            display: none; padding: 5px; width: 100%; max-width: 500px; 
-            margin: 0 auto; height: 100%; flex-direction: column; 
-            overflow-y: auto; /* 画面外に要素が出た場合のスクロールを許可 */
-        }
-        .view.active { display: flex; }
+        .view { display: none; width: 100%; max-width: 500px; margin: 0 auto; }
+        .view.active { display: block; }
 
         .card { 
-            background: rgba(255, 255, 255, 0.95); border-radius: 8px; padding: 12px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 5px; 
-            display: flex; flex-direction: column; flex: 1; 
+            background: rgba(255, 255, 255, 0.95); border-radius: 8px; padding: 10px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px; 
         }
         h1, h2 { margin: 0 0 10px 0; text-align: center; color: var(--primary); font-size: 1.2rem; }
         
         /* 設定画面 */
         .rule-box { 
-            border-left: 4px solid var(--primary); background: #fff0f0; 
-            padding: 10px; font-size: 0.85rem; margin-bottom: 15px; line-height: 1.4;
+            border-left: 5px solid var(--primary); background: #fff0f0; 
+            padding: 8px; font-size: 0.85rem; margin-bottom: 15px; line-height: 1.4;
         }
-        .rule-box ul { margin: 5px 0 10px 0; padding-left: 20px; }
-        .rule-box li { margin-bottom: 3px; }
-        .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; font-size: 0.95rem;}
-        select, input { padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.95rem; width: 100%; }
+        .rule-box ul { margin: 8px 0; padding-left: 20px; }
+        .rule-box li { margin-bottom: 4px; }
+        .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; font-size: 0.9rem;}
+        select, input { padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; width: 100%; }
         .name-inputs { display: grid; gap: 8px; margin-bottom: 15px; }
         
-        .btn { width: 100%; padding: 12px; font-size: 1rem; font-weight: bold; color: #fff; background: var(--secondary); border: none; border-radius: 6px; cursor: pointer; }
-        .btn-submit { background: var(--primary); margin-top: auto; font-size: 1.1rem; }
-        .btn-save { background: var(--success); margin-top: 10px; }
+        /* ボタン類 */
+        .btn { width: 100%; padding: 12px; font-size: 1.05rem; font-weight: bold; color: #fff; background: var(--secondary); border: none; border-radius: 8px; cursor: pointer; display: block; margin-top: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);}
+        .btn-submit { background: var(--primary); }
+        .btn-save { background: var(--success); }
 
-        /* プレイ画面 (高密度化) */
-        .play-header { display: flex; justify-content: space-between; align-items: baseline; font-weight: bold; font-size: 1rem; border-bottom: 2px solid var(--secondary); padding-bottom: 4px; margin-bottom: 5px; }
-        .play-info-bar { display: flex; justify-content: space-between; font-size: 0.75rem; background: #eee; padding: 4px; border-radius: 4px; margin-bottom: 5px; font-weight: bold; color: #555;}
+        /* プレイ画面 (垂直圧縮設定) */
+        .play-header { display: flex; justify-content: space-between; align-items: baseline; font-weight: bold; border-bottom: 2px solid var(--secondary); padding-bottom: 4px; margin-bottom: 6px; }
         
-        /* 役の常時ルール表示帯 */
-        .rule-banner { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; font-size: 0.75rem; background: #fff3cd; color: #856404; padding: 4px; border-radius: 4px; margin-bottom: 5px; font-weight: bold; border: 1px solid #ffeeba;}
+        .rule-banner { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; font-size: 0.75rem; background: #fff3cd; color: #856404; padding: 6px; border-radius: 6px; margin-bottom: 8px; font-weight: bold; border: 1px solid #ffeeba;}
         
-        /* プレイヤーごとの入力UI */
         .player-row { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #ccc; }
         .player-name { font-weight: bold; font-size: 0.95rem; margin-bottom: 4px; display: block; color: var(--primary); }
-        .medal-grid { display: flex; gap: 4px; }
+        .medal-grid { display: flex; gap: 3px; flex-wrap: wrap; }
         
         .medal-btn { 
-            flex: 1; padding: 6px 2px; font-size: 0.75rem; font-weight: bold; border: 1px solid #ccc; 
-            border-radius: 4px; background: #f1f2f6; cursor: pointer; text-align: center; line-height: 1.3;
+            flex: 1; min-width: 40px; padding: 6px 1px; font-size: 0.75rem; font-weight: bold; border: 1px solid #ccc; 
+            border-radius: 6px; background: #f1f2f6; cursor: pointer; text-align: center; line-height: 1.3;
         }
         .medal-btn.selected { border-color: var(--primary); background: #ffeaa7; color: #d35400; box-shadow: inset 0 0 0 2px var(--primary); }
         
         /* ミニスコアボード */
-        .mini-board { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin-bottom: 10px; }
+        .mini-board { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 10px; }
         .mini-board th, .mini-board td { border: 1px solid #ddd; padding: 4px; text-align: center; }
         .mini-board th { background: #f8f9fa; }
         .net-plus { color: #0984e3; font-weight: bold; }
         .net-minus { color: #d63031; font-weight: bold; }
 
         /* 結果画面 */
-        #capture-area { background: var(--bg-grad); padding: 5px; }
-        .detail-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; background: #fff; margin-bottom: 10px; }
+        #capture-area { background: var(--bg-grad); padding: 5px; border-radius: 8px; }
+        .detail-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; background: #fff; margin-bottom: 15px; }
         .detail-table th, .detail-table td { border: 1px solid #ccc; padding: 4px; text-align: center; }
         .detail-table th { background: #eee; }
     </style>
@@ -109,7 +101,7 @@
             
             <div class="config-row">
                 <label>プレイ人数</label>
-                <select id="player-count" style="width:45%;" onchange="renderNameInputs()">
+                <select id="player-count" style="width:50%;" onchange="renderNameInputs()">
                     <option value="4" selected>4人</option>
                     <option value="3">3人</option>
                     <option value="2">2人</option>
@@ -117,7 +109,7 @@
             </div>
             <div class="config-row">
                 <label>レート (1pt)</label>
-                <select id="rate" style="width:45%;">
+                <select id="rate" style="width:50%;">
                     <script>
                         for(let i = 50; i <= 500; i += 50) document.write(`<option value="${i}" ${i===100?'selected':''}>${i}円</option>`);
                     </script>
@@ -125,6 +117,7 @@
             </div>
 
             <div class="name-inputs" id="name-inputs-container"></div>
+            
             <button class="btn btn-submit" onclick="startGame()">ゲーム開始</button>
         </div>
     </div>
@@ -137,17 +130,11 @@
                 <span id="rate-display">レート: 100</span>
             </div>
             
-            <!-- 常時ルール表示帯 -->
             <div id="rule-banner" class="rule-banner"></div>
-
-            <div class="play-info-bar">
-                <span>各プレイヤーの役を選択（該当なしは「なし」）</span>
-            </div>
             
-            <!-- 入力UI -->
-            <div id="input-container" style="flex: 1; display: flex; flex-direction: column; justify-content: center;"></div>
+            <div id="input-container"></div>
 
-            <!-- 暫定純利益 -->
+            <h3 style="text-align: center; font-size: 0.9rem; margin: 5px 0;">現在の純利益状況</h3>
             <table class="mini-board">
                 <thead>
                     <tr><th>名前</th><th>累計Pt</th><th>純利益</th></tr>
@@ -203,13 +190,13 @@
 
         function generateMedals(count) {
             const medals = [];
-            medals.push({ name: "ダイヤ", short: "ダ", val: count + 1, emoji: "💎" });
+            medals.push({ name: "ダイヤ", short: "ダイヤ", val: count + 1, emoji: "💎" });
             const names = ["金", "銀", "銅", "鉄"];
             const emojis = ["🥇", "🥈", "🥉", "⚙️"];
             for (let i = 0; i < count; i++) {
                 medals.push({ name: names[i], short: names[i], val: count - i, emoji: emojis[i] });
             }
-            medals.push({ name: "なし", short: "なし", val: 0, emoji: "❌" });
+            medals.push({ name: "なし", short: "0点", val: 0, emoji: "❌" });
             return medals;
         }
 
@@ -235,10 +222,10 @@
 
         function renderPlayScreen() {
             document.getElementById('hole-indicator').innerText = `Hole ${currentHole} / ${TOTAL_HOLES}`;
-            document.getElementById('rate-display').innerText = `レート: ${rate}`;
+            document.getElementById('rate-display').innerText = `レート: ${rate}円`;
             
             document.getElementById('rule-banner').innerHTML = activeMedals.filter(m => m.val > 0).map(m => 
-                `<span>${m.emoji}${m.short}:${m.val}</span>`
+                `<span>${m.emoji}${m.short}:${m.val}pt</span>`
             ).join(' | ');
 
             const container = document.getElementById('input-container');
@@ -247,10 +234,10 @@
             players.forEach((p, pIndex) => {
                 let btns = activeMedals.map(m => {
                     const isSelected = currentHoleSelection[pIndex] === m.val;
-                    const label = m.val > 0 ? `${m.short}(${m.val})` : `0pt`;
+                    const label = m.val > 0 ? `(${m.val}pt)` : `(0pt)`;
                     return `<div class="medal-btn ${isSelected ? 'selected' : ''}" 
                                  onclick="selectMedal(${pIndex}, ${m.val})">
-                                ${m.emoji} ${m.name}<br>${label}
+                                ${m.emoji} ${m.short}<br>${label}
                             </div>`;
                 }).join('');
 
@@ -280,6 +267,7 @@
                 currentHole++;
                 currentHoleSelection = players.map(() => 0);
                 renderPlayScreen();
+                window.scrollTo(0, 0); // 確実なトップ位置へのリセット
             }
         }
 
@@ -334,11 +322,7 @@
         function switchView(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
-            
-            // プレイ画面に遷移した場合、画面最上部へスクロール位置をリセット
-            if (viewId === 'play-view' || viewId === 'result-view') {
-                document.getElementById(viewId).scrollTop = 0;
-            }
+            window.scrollTo(0, 0); // 画面遷移時にスクロール位置を最上部へリセット
         }
 
         function saveAsImage() {
