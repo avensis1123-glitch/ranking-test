@@ -21,58 +21,69 @@
             font-family: 'Helvetica Neue', Arial, sans-serif; 
             background: var(--bg-grad); color: var(--dark); 
             margin: 0; padding: 0; 
-            height: 100vh; overflow: hidden; /* スクロール禁止を強制 */
+            height: 100vh; /* 画面高さに固定 */
             display: flex; flex-direction: column;
         }
 
-        /* ビュー管理 */
-        .view { display: none; padding: 5px; width: 100%; max-width: 500px; margin: 0 auto; height: 100%; flex-direction: column; }
+        /* ビュー管理（各ビューごとにスクロールを許可） */
+        .view { 
+            display: none; padding: 5px; width: 100%; max-width: 500px; 
+            margin: 0 auto; height: 100%; flex-direction: column; 
+            overflow-y: auto; /* 画面外に要素が出た場合のスクロールを許可 */
+        }
         .view.active { display: flex; }
 
-        .card { background: rgba(255, 255, 255, 0.95); border-radius: 8px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 5px; display: flex; flex-direction: column; flex: 1; }
-        h1, h2 { margin: 0 0 5px 0; text-align: center; color: var(--primary); font-size: 1.1rem; }
+        .card { 
+            background: rgba(255, 255, 255, 0.95); border-radius: 8px; padding: 12px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 5px; 
+            display: flex; flex-direction: column; flex: 1; 
+        }
+        h1, h2 { margin: 0 0 10px 0; text-align: center; color: var(--primary); font-size: 1.2rem; }
         
         /* 設定画面 */
-        .rule-box { border-left: 4px solid var(--primary); background: #fff0f0; padding: 8px; font-size: 0.8rem; margin-bottom: 10px; }
-        .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; font-size: 0.9rem;}
-        select, input { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.9rem; width: 100%; }
-        .name-inputs { display: grid; gap: 5px; margin-bottom: 10px; }
+        .rule-box { 
+            border-left: 4px solid var(--primary); background: #fff0f0; 
+            padding: 10px; font-size: 0.85rem; margin-bottom: 15px; line-height: 1.4;
+        }
+        .rule-box ul { margin: 5px 0 10px 0; padding-left: 20px; }
+        .rule-box li { margin-bottom: 3px; }
+        .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; font-size: 0.95rem;}
+        select, input { padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.95rem; width: 100%; }
+        .name-inputs { display: grid; gap: 8px; margin-bottom: 15px; }
         
-        .btn { width: 100%; padding: 10px; font-size: 1rem; font-weight: bold; color: #fff; background: var(--secondary); border: none; border-radius: 6px; cursor: pointer; }
-        .btn-submit { background: var(--primary); margin-top: auto; padding: 12px; font-size: 1.1rem;}
+        .btn { width: 100%; padding: 12px; font-size: 1rem; font-weight: bold; color: #fff; background: var(--secondary); border: none; border-radius: 6px; cursor: pointer; }
+        .btn-submit { background: var(--primary); margin-top: auto; font-size: 1.1rem; }
         .btn-save { background: var(--success); margin-top: 10px; }
 
         /* プレイ画面 (高密度化) */
-        .play-header { display: flex; justify-content: space-between; align-items: baseline; font-weight: bold; font-size: 1rem; border-bottom: 2px solid var(--secondary); padding-bottom: 2px; margin-bottom: 5px; }
+        .play-header { display: flex; justify-content: space-between; align-items: baseline; font-weight: bold; font-size: 1rem; border-bottom: 2px solid var(--secondary); padding-bottom: 4px; margin-bottom: 5px; }
         .play-info-bar { display: flex; justify-content: space-between; font-size: 0.75rem; background: #eee; padding: 4px; border-radius: 4px; margin-bottom: 5px; font-weight: bold; color: #555;}
         
         /* 役の常時ルール表示帯 */
-        .rule-banner { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; font-size: 0.7rem; background: #fff3cd; color: #856404; padding: 4px; border-radius: 4px; margin-bottom: 5px; font-weight: bold; border: 1px solid #ffeeba;}
+        .rule-banner { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; font-size: 0.75rem; background: #fff3cd; color: #856404; padding: 4px; border-radius: 4px; margin-bottom: 5px; font-weight: bold; border: 1px solid #ffeeba;}
         
         /* プレイヤーごとの入力UI */
-        .player-row { margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed #ccc; }
-        .player-name { font-weight: bold; font-size: 0.9rem; margin-bottom: 2px; display: block; color: var(--primary); }
-        .medal-grid { display: flex; gap: 2px; }
+        .player-row { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #ccc; }
+        .player-name { font-weight: bold; font-size: 0.95rem; margin-bottom: 4px; display: block; color: var(--primary); }
+        .medal-grid { display: flex; gap: 4px; }
         
         .medal-btn { 
-            flex: 1; padding: 4px 1px; font-size: 0.7rem; font-weight: bold; border: 1px solid #ccc; 
-            border-radius: 4px; background: #f1f2f6; cursor: pointer; text-align: center; line-height: 1.2;
+            flex: 1; padding: 6px 2px; font-size: 0.75rem; font-weight: bold; border: 1px solid #ccc; 
+            border-radius: 4px; background: #f1f2f6; cursor: pointer; text-align: center; line-height: 1.3;
         }
         .medal-btn.selected { border-color: var(--primary); background: #ffeaa7; color: #d35400; box-shadow: inset 0 0 0 2px var(--primary); }
         
-        /* ミニスコアボード (極小化) */
-        .mini-board { width: 100%; border-collapse: collapse; font-size: 0.7rem; margin-bottom: 5px; }
-        .mini-board th, .mini-board td { border: 1px solid #ddd; padding: 2px; text-align: center; }
+        /* ミニスコアボード */
+        .mini-board { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin-bottom: 10px; }
+        .mini-board th, .mini-board td { border: 1px solid #ddd; padding: 4px; text-align: center; }
         .mini-board th { background: #f8f9fa; }
         .net-plus { color: #0984e3; font-weight: bold; }
         .net-minus { color: #d63031; font-weight: bold; }
 
-        /* 結果画面 (スクロール許可) */
-        #result-view { overflow-y: auto; display: none; }
-        #result-view.active { display: block; }
+        /* 結果画面 */
         #capture-area { background: var(--bg-grad); padding: 5px; }
-        .detail-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; background: #fff; margin-bottom: 10px; }
-        .detail-table th, .detail-table td { border: 1px solid #ccc; padding: 2px; text-align: center; }
+        .detail-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; background: #fff; margin-bottom: 10px; }
+        .detail-table th, .detail-table td { border: 1px solid #ccc; padding: 4px; text-align: center; }
         .detail-table th { background: #eee; }
     </style>
 </head>
@@ -81,10 +92,19 @@
     <!-- 1. 設定画面 -->
     <div id="setup-view" class="view active">
         <div class="card">
-            <h1>オリンピック集計</h1>
+            <h1>オリンピック集計アプリ</h1>
+            
             <div class="rule-box">
-                <b>【絶対条件】</b><br>
-                グリーン上から<b>「1パット」でカップイン</b>した場合のみ対象。（※ダイヤのみグリーン外から）
+                <b>【オリンピック基本ルール】</b><br>
+                各ホールのグリーン上において、カップからのパット距離が遠い順に役が割り当てられます。参加人数に応じて配点は自動調整されます。
+                <ul>
+                    <li><b>💎ダイヤ:</b> グリーン外からの直接カップイン (プレイ人数+1 pt)</li>
+                    <li><b>🥇金:</b> グリーン上で1番遠い距離からの1パット (プレイ人数と同 pt)</li>
+                    <li><b>🥈銀:</b> 2番目に遠い距離からの1パット (金から-1 pt)</li>
+                    <li><b>🥉銅:</b> 3番目に遠い距離からの1パット (銀から-1 pt)</li>
+                    <li><b>⚙️鉄:</b> 1番近い距離からの1パット (銅から-1 pt)</li>
+                </ul>
+                <span style="color: var(--danger); font-weight: bold;">※絶対条件：グリーン上においては「1パット」でカップインした場合のみポイント獲得の対象となります。（2パット以上は全て0点）</span>
             </div>
             
             <div class="config-row">
@@ -99,7 +119,7 @@
                 <label>レート (1pt)</label>
                 <select id="rate" style="width:45%;">
                     <script>
-                        for(let i = 50; i <= 500; i += 50) document.write(`<option value="${i}" ${i===100?'selected':''}>${i}</option>`);
+                        for(let i = 50; i <= 500; i += 50) document.write(`<option value="${i}" ${i===100?'selected':''}>${i}円</option>`);
                     </script>
                 </select>
             </div>
@@ -109,7 +129,7 @@
         </div>
     </div>
 
-    <!-- 2. プレイ画面 (No-Scroll 完全1画面完結) -->
+    <!-- 2. プレイ画面 -->
     <div id="play-view" class="view">
         <div class="card">
             <div class="play-header">
@@ -181,7 +201,6 @@
             }
         }
 
-        // 動的配点ロジック（スライド方式）
         function generateMedals(count) {
             const medals = [];
             medals.push({ name: "ダイヤ", short: "ダ", val: count + 1, emoji: "💎" });
@@ -218,7 +237,6 @@
             document.getElementById('hole-indicator').innerText = `Hole ${currentHole} / ${TOTAL_HOLES}`;
             document.getElementById('rate-display').innerText = `レート: ${rate}`;
             
-            // ルール帯のレンダリング
             document.getElementById('rule-banner').innerHTML = activeMedals.filter(m => m.val > 0).map(m => 
                 `<span>${m.emoji}${m.short}:${m.val}</span>`
             ).join(' | ');
@@ -229,7 +247,6 @@
             players.forEach((p, pIndex) => {
                 let btns = activeMedals.map(m => {
                     const isSelected = currentHoleSelection[pIndex] === m.val;
-                    // 文字での役名表示を追加
                     const label = m.val > 0 ? `${m.short}(${m.val})` : `0pt`;
                     return `<div class="medal-btn ${isSelected ? 'selected' : ''}" 
                                  onclick="selectMedal(${pIndex}, ${m.val})">
@@ -258,7 +275,6 @@
 
             if (currentHole >= TOTAL_HOLES) {
                 switchView('result-view');
-                document.body.style.overflow = 'auto'; // 結果画面ではスクロールを許可
                 renderResultScreen();
             } else {
                 currentHole++;
@@ -318,6 +334,11 @@
         function switchView(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
+            
+            // プレイ画面に遷移した場合、画面最上部へスクロール位置をリセット
+            if (viewId === 'play-view' || viewId === 'result-view') {
+                document.getElementById(viewId).scrollTop = 0;
+            }
         }
 
         function saveAsImage() {
